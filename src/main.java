@@ -3,7 +3,7 @@ import java.text.DecimalFormat;
 
 public class main {
     public static void main(String[] args) {
-        int generations = 10000;
+        int generations = 100;
         int populationSize = 30;
         Chromosome[] pool = generatePop(populationSize);
         Chromosome[] bestOnes = new Chromosome[generations];
@@ -17,7 +17,7 @@ public class main {
             bestOnes[currentGen] = best;
             System.out.println("Generation: " + currentGen + ", Current best fitness: " + calculateFitness(best) +
                     ", Variables A,B,C: " + best.getA() + "," + best.getB() + "," + best.getC() +
-                    ", Probability: " + best.getProbability());
+                    ", Probability: " + calculateProbability(best, pool));
             currentGen++;
         }
         for (int i = 0; i < bestOnes.length; i++) {
@@ -49,18 +49,11 @@ public class main {
             Chromosome child = makeChild(population, 1);
             newPop[i] =  child;
         }
-        return calculateProbability(newPop);
+        return newPop;
     }
 
-    private static Chromosome[] calculateProbability(Chromosome[] population){
-        double totalFit = 0.0;
-        for (Chromosome c : population) {
-            totalFit += calculateFitness(c);
-        }
-        for (Chromosome c : population) {
-            c.setProbability(totalFit, calculateFitness(c));
-        }
-        return population;
+    private static double calculateProbability(Chromosome c, Chromosome[] population){
+        return calculateFitness(c) / calculateTotalFitness(population);
     }
 
     private static Chromosome[] generatePop(int size) {
@@ -74,8 +67,6 @@ public class main {
             chrom.setC(Double.parseDouble(df.format(rn.nextDouble(101))));
             population[i] = chrom;
         }
-
-        population = calculateProbability(population);
         return population;
     }
 
@@ -84,7 +75,7 @@ public class main {
         double progress = 0.0;
         Chromosome chromo = null;
         for (Chromosome c : population) {
-            progress += c.getProbability();
+            progress += calculateProbability(c, population);
             if (progress >= random) {
                 chromo = c;
                 break;
@@ -92,6 +83,16 @@ public class main {
         }
         return chromo;
     }
+
+
+    private static double calculateTotalFitness(Chromosome[] pop) {
+        double totalFit = 0.0;
+        for (Chromosome c : pop) {
+            totalFit += calculateFitness(c);
+        }
+        return totalFit;
+    }
+
 
 
     private static double calculateFitness(Chromosome c) {
@@ -146,16 +147,6 @@ class Chromosome {
     private double a = 0;
     private double b = 0;
     private double c = 0;
-    private double probability = 0;
-
-    public double getProbability() {
-        return probability;
-    }
-
-
-    public void setProbability(double totalFitness, double fitness) {
-        probability = fitness / totalFitness;
-    }
 
     public double getC() {
         return c;
