@@ -2,21 +2,29 @@ import java.security.SecureRandom;
 
 public class GA2 {
     public static void main(String[] args) {
-        int generations = 300;
+        int generations = 3000;
         int currentGen = 0;
         int poolSize = 30;
         int variants = 5;
+        ChromosomeX[] generationalTops = new ChromosomeX[generations];
+        ChromosomeX generationalBest = null;
         int[] X = {1000,2000,3000,4000,5000,6000,7000,8000,9000,10000}; // Workloads
         double[] V = {222, 412, 608, 806.5, 1004.5, 1203.4, 1402.8, 1602, 1801.5, 2001.23}; // Service Rates
         for (int i = 0; i < X.length; i++) {
             ChromosomeX[] pool = generatePool(poolSize, variants, X[i]);
-            System.out.println("Gen: " + currentGen + ", Current best fitness: " + currentBest(pool, V[i]).fitnessFunction(V[i]));
+            generationalBest = currentBest(pool, V[i]);
+            System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction(V[i]));
+            generationalTops[currentGen] = generationalBest;
             currentGen++;
             while (currentGen < generations) {
                 pool = progressiveGenerations(pool, X[i], V[i]);
-                System.out.println("Gen: " + currentGen + ", Current best fitness: " + currentBest(pool, V[i]).fitnessFunction(V[i]));
+                generationalBest = currentBest(pool, V[i]);
+                System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction(V[i]));
+                generationalTops[currentGen] = generationalBest;
                 currentGen++;
             }
+            ChromosomeX absoluteBest = currentBest(generationalTops, V[i]);
+            
             currentGen = 0;
         }
     }
@@ -25,8 +33,10 @@ public class GA2 {
         ChromosomeX[] newPop = new ChromosomeX[pool.length];
         for (int i = 0; i < newPop.length; i++) {
             ChromosomeX child = getChild(pool, 1, X, V);
-            while (!child.checkConstraint(X)) {
-                child = getChild(pool, 1, X, V);
+            if (child.countSum() > X) {
+                child.modifySum((child.countSum() - X), false);
+            } else if (child.countSum() < X) {
+                child.modifySum((X - child.countSum()), true);
             }
             newPop[i] =  child;
         }
@@ -133,11 +143,29 @@ class ChromosomeX {
         this.x[pos] = x;
     }
     public boolean checkConstraint(int X) {
+        return countSum() == X;
+    }
+
+    public int countSum() {
         int sum = 0;
         for (int num : x) {
             sum += num;
         }
-        return sum == X;
+        return sum;
+    }
+
+    public void modifySum(int loops, boolean add) {
+        SecureRandom rn = new SecureRandom();
+        for (int i = 0; i < loops; i++) {
+            int pos = rn.nextInt(x.length);
+            if (add) setX(getX(pos) + 1, pos);
+            else {
+                while (getX(pos) <= 0){
+                    pos = rn.nextInt(x.length);
+                }
+                setX(getX(pos) - 1, pos);
+            }
+        }
     }
 
     public double fitnessFunction(double V) {
