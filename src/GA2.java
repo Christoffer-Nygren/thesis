@@ -1,3 +1,7 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.security.SecureRandom;
 
 public class GA2 {
@@ -7,7 +11,7 @@ public class GA2 {
         int poolSize = 30;
         int variants = 5;
         ChromosomeX[] generationalTops = new ChromosomeX[generations];
-        ChromosomeX generationalBest = null;
+        ChromosomeX generationalBest;
         int[] X = {1000,2000,3000,4000,5000,6000,7000,8000,9000,10000}; // Workloads
         double[] V = {222, 412, 608, 806.5, 1004.5, 1203.4, 1402.8, 1602, 1801.5, 2001.23}; // Service Rates
         for (int i = 0; i < X.length; i++) {
@@ -24,15 +28,47 @@ public class GA2 {
                 currentGen++;
             }
             ChromosomeX absoluteBest = currentBest(generationalTops, V[i]);
-            
+            addToRegistry(absoluteBest, X[i], V[i]);
+
             currentGen = 0;
+        }
+    }
+
+    private static void addToRegistry(ChromosomeX c, int X, double V) {
+        try {
+            createFile();
+            FileWriter myWriter = new FileWriter("registry.txt", true);
+            BufferedWriter bw = new BufferedWriter(myWriter);
+            bw.write("Best for workload "+ X + ", Fitness score " + c.fitnessFunction(V) + ", Positions:" + c.getX(0) + ", "
+                    + c.getX(1) + ", " + c.getX(2) +", " + c.getX(3) + ", " + c.getX(4) + "\n");
+            bw.newLine();
+            bw.close();
+            myWriter.close();
+            System.out.println("Successfully wrote to the file.");
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+    }
+
+    private static void createFile() {
+        try {
+            File myObj = new File("registry.txt");
+            if (myObj.createNewFile()) {
+                System.out.println("File created: " + myObj.getName());
+            } else {
+                System.out.println("File already exists.");
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
         }
     }
 
     private static ChromosomeX[] progressiveGenerations(ChromosomeX[] pool, int X, double V ) {
         ChromosomeX[] newPop = new ChromosomeX[pool.length];
         for (int i = 0; i < newPop.length; i++) {
-            ChromosomeX child = getChild(pool, 1, X, V);
+            ChromosomeX child = getChild(pool, V);
             if (child.countSum() > X) {
                 child.modifySum((child.countSum() - X), false);
             } else if (child.countSum() < X) {
@@ -43,11 +79,10 @@ public class GA2 {
         return newPop;
     }
 
-    private static ChromosomeX getChild(ChromosomeX[] pool, int mutationRate, int X, double V) {
+    private static ChromosomeX getChild(ChromosomeX[] pool, double V) {
         ChromosomeX parent1 = pickRandomParent(pool,V);
         ChromosomeX parent2 = pickRandomParent(pool,V);
         SecureRandom rn = new SecureRandom();
-        int mutation = rn.nextInt(101);
         int crossover = rn.nextInt(5);
         int[] parentVar1 = {parent1.getX(0),parent1.getX(1),parent1.getX(2),parent1.getX(3),parent1.getX(4)};
         int[] parentVar2 = {parent2.getX(0),parent2.getX(1),parent2.getX(2),parent2.getX(3),parent2.getX(4)};
@@ -62,9 +97,6 @@ public class GA2 {
         }
         for (int i = 0; i < 5; i++) {
             child.setX(newChild[i], i);
-        }
-        if (mutationRate <= mutation) {
-            child.mutate(X);
         }
         return child;
     }
@@ -177,11 +209,5 @@ class ChromosomeX {
             Z += (a * j * j) + (b * j) + c + (1 / (V - j));
         }
         return 1 / Z;
-    }
-    public void mutate(int X) {
-        SecureRandom rn = new SecureRandom();
-        int pos = rn.nextInt(5);
-        int random = rn.nextInt(X);
-        setX(random, pos);
     }
 }
