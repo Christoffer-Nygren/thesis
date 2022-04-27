@@ -3,7 +3,7 @@ import java.text.DecimalFormat;
 
 public class main {
     public static void main(String[] args) {
-        int generations = 100;
+        int generations = 300;
         int populationSize = 30;
         Chromosome[] pool = generatePop(populationSize);
         Chromosome[] bestOnes = new Chromosome[generations];
@@ -15,20 +15,20 @@ public class main {
             pool = generateProgressivePop(pool);
             best = displayBestSolution(pool);
             bestOnes[currentGen] = best;
-            System.out.println("Generation: " + currentGen + ", Current best fitness: " + calculateFitness(best) +
+            System.out.println("Generation: " + currentGen + ", Current best fitness: " + best.calculateFitness() +
                     ", Variables A,B,C: " + best.getA() + "," + best.getB() + "," + best.getC() +
                     ", Probability: " + calculateProbability(best, pool));
             currentGen++;
         }
         for (int i = 0; i < bestOnes.length; i++) {
             if (absoluteBest == null) absoluteBest = bestOnes[i];
-            else if (calculateFitness(bestOnes[i]) > calculateFitness(absoluteBest)) {
+            else if (bestOnes[i].calculateFitness() > absoluteBest.calculateFitness()) {
                 absoluteBest = bestOnes[i];
                 bestGen = i;
             }
         }
 
-        System.out.println("The best performer is.... " + calculateFitness(absoluteBest) + " A,B,C: " + absoluteBest.getA() +", " + absoluteBest.getB() + ", " + absoluteBest.getC() + " Gen: " + bestGen);
+        System.out.println("The best performer is.... " + absoluteBest.calculateFitness() + " A,B,C: " + absoluteBest.getA() +", " + absoluteBest.getB() + ", " + absoluteBest.getC() + " Gen: " + bestGen);
     }
 
     private static Chromosome displayBestSolution(Chromosome[] population) {
@@ -36,7 +36,7 @@ public class main {
         for (Chromosome chrom : population) {
             if (best == null) {
                 best = chrom;
-            } else if (calculateFitness(chrom) > calculateFitness(best)) {
+            } else if (chrom.calculateFitness() > best.calculateFitness()) {
                 best = chrom;
             }
         }
@@ -53,7 +53,7 @@ public class main {
     }
 
     private static double calculateProbability(Chromosome c, Chromosome[] population){
-        return calculateFitness(c) / calculateTotalFitness(population);
+        return c.calculateFitness() / calculateTotalFitness(population);
     }
 
     private static Chromosome[] generatePop(int size) {
@@ -65,6 +65,7 @@ public class main {
             chrom.setA(Double.parseDouble(df.format(rn.nextDouble(100) + 1)));
             chrom.setB(Double.parseDouble(df.format(rn.nextDouble(101))));
             chrom.setC(Double.parseDouble(df.format(rn.nextDouble(101))));
+            chrom.setN(rn.nextInt(50));
             population[i] = chrom;
         }
         return population;
@@ -88,18 +89,13 @@ public class main {
     private static double calculateTotalFitness(Chromosome[] pop) {
         double totalFit = 0.0;
         for (Chromosome c : pop) {
-            totalFit += calculateFitness(c);
+            totalFit += c.calculateFitness();
         }
         return totalFit;
     }
 
 
 
-    private static double calculateFitness(Chromosome c) {
-        DecimalFormat df = new DecimalFormat("#.#######");
-        int workAmount = 10;
-        return Double.parseDouble(df.format(1 / ((c.getA() * Math.pow(workAmount, 2)) + (c.getB() * workAmount) + c.getC())));
-    }
 
     private static Chromosome makeChild(Chromosome[] population, int mutationRate) {
         Chromosome parent1 = pickRandomParent(population);
@@ -121,24 +117,13 @@ public class main {
         child.setA(newChild[0]);
         child.setB(newChild[1]);
         child.setC(newChild[2]);
+        child.setN(rn.nextInt(50));
         if (mutationRate <= mutation) {
-            child = mutateChild(child);
+            child.mutate();
         }
         return child;
     }
 
-    private static Chromosome mutateChild(Chromosome child) {
-        DecimalFormat df = new DecimalFormat("#.###");
-        SecureRandom rn = new SecureRandom();
-        int random = rn.nextInt(3);
-        double[] mutatedChild = {child.getA(), child.getB(), child.getC()};
-        mutatedChild[random] = Double.parseDouble(df.format(rn.nextDouble(101)));
-        child = new Chromosome();
-        child.setA(mutatedChild[0]);
-        child.setB(mutatedChild[1]);
-        child.setC(mutatedChild[2]);
-        return child;
-    }
 
 
 }
@@ -147,6 +132,15 @@ class Chromosome {
     private double a = 0;
     private double b = 0;
     private double c = 0;
+    private int n = 0;
+
+    public int getN() {
+        return n;
+    }
+
+    public void setN(int n) {
+        this.n = n;
+    }
 
     public double getC() {
         return c;
@@ -170,5 +164,20 @@ class Chromosome {
 
     public void setA(double a) {
         this.a = a;
+    }
+
+    public double calculateFitness() {
+        DecimalFormat df = new DecimalFormat("#.#######");
+        int workAmount = 10;
+        double service = 50;
+        return Double.parseDouble(df.format(workAmount / ((getA() * Math.pow(workAmount, 2)) + (getB() * workAmount) + getC()) + (getN() / service - workAmount)));
+    }
+    public void mutate() {
+        DecimalFormat df = new DecimalFormat("#.###");
+        SecureRandom rn = new SecureRandom();
+        int random = rn.nextInt(3);
+        if (random == 0) setA(Double.parseDouble(df.format(rn.nextDouble(100)+ 1)));
+        else if (random == 1) setB(Double.parseDouble(df.format(rn.nextDouble(101))));
+        else setC(Double.parseDouble(df.format(rn.nextDouble(101))));
     }
 }
