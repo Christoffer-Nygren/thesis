@@ -4,7 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.security.SecureRandom;
 
-public class GA2 {
+public class SP1 {
     public static void main(String[] args) {
         int generations = 3000;
         int currentGen = 0;
