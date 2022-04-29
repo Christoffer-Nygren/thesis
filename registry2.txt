@@ -1,0 +1,8 @@
+Best for workload 1000, Fitness score 1.0, Positions:86, 914, 0, 0, 0
+
+Best for workload 2000, Fitness score 1.0, Positions:367, 312, 129, 1192, 0
+
+Best for workload 3000, Fitness score 3.701436239086276E-5, Positions:0, 0, 828, 2172, 0
+
+Best for workload 4000, Fitness score 1.0, Positions:8, 2066, 51, 1862, 13
+
