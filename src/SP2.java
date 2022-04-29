@@ -6,9 +6,9 @@ import java.security.SecureRandom;
 
 public class SP2 {
     public static void main(String[] args) {
-        int generations = 3000;
+        int generations = 300;
         int currentGen = 0;
-        int poolSize = 100;
+        int poolSize = 50;
         int variants = 5;
         Chromosomes[] generationalTops = new Chromosomes[generations];
         Chromosomes generationalBest;
@@ -38,8 +38,13 @@ public class SP2 {
             createFile();
             FileWriter myWriter = new FileWriter("registry2.txt", true);
             BufferedWriter bw = new BufferedWriter(myWriter);
-            bw.write("Best for workload "+ Y + ", Fitness score " + c.fitnessFunction() + ", Positions:" + c.getA(0) + ", "
-                    + c.getA(1) + ", " + c.getA(2) +", " + c.getA(3) + ", " + c.getA(4) + "\n");
+            bw.write("Best for workload "+ Y + ", Fitness score " + c.fitnessFunction() +
+                    ", Positions A:" + toString(c.getFullA()) + "\n" +
+                    ", Positions B:" + toString(c.getFullB()) + "\n" +
+                    ", Positions S:" + toString(c.getFullS())  + "\n" +
+                    ", Positions F:" + toString(c.getFullF())  + "\n" +
+                    ", Positions N:" + toString(c.getFullN())  + "\n" +
+                    ", Positions Y:" + toString(c.getFullY())  + "\n");
             bw.newLine();
             bw.close();
             myWriter.close();
@@ -48,6 +53,18 @@ public class SP2 {
             System.out.println("An error occurred.");
             e.printStackTrace();
         }
+    }
+
+    private static String toString(int[] arr) {
+        StringBuilder string = new StringBuilder();
+        for (int i: arr) string.append(i).append(", ");
+        return String.valueOf(string);
+
+    }
+    private static String toString(double[] arr) {
+        StringBuilder string = new StringBuilder();
+        for (double i: arr) string.append(i).append(", ");
+        return String.valueOf(string);
     }
 
     private static void createFile() {
@@ -84,18 +101,12 @@ public class SP2 {
         Chromosomes parent1 = pickRandomParent(pool);
         Chromosomes parent2 = pickRandomParent(pool);
         Chromosomes child = new Chromosomes();
-        int[] y = crossoverLoopInt(new int[]{parent1.getY(0), parent1.getY(1), parent1.getY(2), parent1.getY(3), parent1.getY(4)},
-                new int[]{parent2.getY(0), parent2.getY(1), parent2.getY(2), parent2.getY(3), parent2.getY(4)});
-        int[] s = crossoverLoopInt(new int[]{parent1.getS(0), parent1.getS(1), parent1.getS(2), parent1.getS(3), parent1.getS(4)},
-                new int[]{parent2.getS(0), parent2.getS(1), parent2.getS(2), parent2.getS(3), parent2.getS(4)});
-        double[] A = crossoverLoopDouble(new double[]{parent1.getA(0), parent1.getA(1), parent1.getA(2), parent1.getA(3), parent1.getA(4)},
-                new double[]{parent2.getA(0), parent2.getA(1), parent2.getA(2), parent2.getA(3), parent2.getA(4)});
-        int[] B = crossoverLoopInt(new int[]{parent1.getB(0), parent1.getB(1), parent1.getB(2), parent1.getB(3), parent1.getB(4)},
-                new int[]{parent2.getB(0), parent2.getB(1), parent2.getB(2), parent2.getB(3), parent2.getB(4)});
-        double[] f = crossoverLoopDouble(new double[]{parent1.getF(0), parent1.getF(1), parent1.getF(2), parent1.getF(3), parent1.getF(4)},
-                new double[]{parent2.getF(0), parent2.getF(1), parent2.getF(2), parent2.getF(3), parent2.getF(4)});
-        int[] n = crossoverLoopInt(new int[]{parent1.getN(0), parent1.getN(1), parent1.getN(2), parent1.getN(3), parent1.getN(4)},
-                new int[]{parent2.getN(0), parent2.getN(1), parent2.getN(2), parent2.getN(3), parent2.getN(4)});
+        int[] y = crossoverLoop(parent1.getFullY(), parent2.getFullY());
+        int[] s = crossoverLoop(parent1.getFullS(), parent2.getFullS());
+        double[] A = crossoverLoop(parent1.getFullA(), parent2.getFullA());
+        int[] B = crossoverLoop(parent1.getFullB(), parent2.getFullB());
+        double[] f = crossoverLoop(parent1.getFullF(), parent2.getFullF());
+        int[] n = crossoverLoop(parent1.getFullN(), parent2.getFullN());
         for (int i = 0; i < 5; i++) {
             child.setY(y[i], i);
             child.setS(s[i], i);
@@ -107,7 +118,7 @@ public class SP2 {
 
         return child;
     }
-    private static int[] crossoverLoopInt(int[] a, int[] b) {
+    private static int[] crossoverLoop(int[] a, int[] b) {
         SecureRandom rn = new SecureRandom();
         int crossover = rn.nextInt(5);
         int[] newChild = new int[a.length];
@@ -121,7 +132,7 @@ public class SP2 {
         return newChild;
 
     }
-    private static double[] crossoverLoopDouble(double[] a, double[] b) {
+    private static double[] crossoverLoop(double[] a, double[] b) {
         SecureRandom rn = new SecureRandom();
         int crossover = rn.nextInt(5);
         double[] newChild = new double[a.length];
@@ -164,15 +175,20 @@ public class SP2 {
     }
 
     private static Chromosomes currentBest(Chromosomes[] pool) {
-        Chromosomes best = null;
-        for (Chromosomes c: pool) {
-            if (best == null) best = c;
-            else if (best.fitnessFunction() < c.fitnessFunction()) best = c;
+        Chromosomes c = null;
+        for (Chromosomes cc: pool) {
+            if (c == null) c = cc;
+            else if (c.fitnessFunction() < c.fitnessFunction()) c = cc;
         }
-        System.out.print(" S: " + best.getB(0) + ", " + best.getB(1) + ", " + best.getB(2) + ", " + best.getB(3) +
-                ", " + best.getB(4) + ", ");
+        System.out.print( "Positions A:" + c.getA(0) + ", "
+                + c.getA(1) + ", " + c.getA(2) +", " + c.getA(3) + ", " + c.getA(4) + "\n" + ", Positions B:" + c.getB(0) + ", "
+                + c.getB(1) + ", " + c.getB(2) +", " + c.getB(3) + ", " + c.getB(4) + "\n" + ", Positions S:" + c.getS(0) + ", "
+                + c.getS(1) + ", " + c.getS(2) +", " + c.getS(3) + ", " + c.getS(4) + "\n" + ", Positions F:" + c.getF(0) + ", "
+                + c.getF(1) + ", " + c.getF(2) +", " + c.getF(3) + ", " + c.getF(4) + "\n" + ", Positions N:" + c.getN(0) + ", "
+                + c.getN(1) + ", " + c.getN(2) +", " + c.getN(3) + ", " + c.getN(4) + "\n" + ", Positions Y:" + c.getY(0) + ", "
+                + c.getY(1) + ", " + c.getY(2) +", " + c.getY(3) + ", " + c.getY(4) + "\n");
 
-        return best;
+        return c;
     }
 
     private static Chromosomes[] generatePool(int poolSize , int variants, int Y) {
@@ -230,12 +246,18 @@ class Chromosomes {
     public int getY(int pos) {
         return y[pos];
     }
+    public int[] getFullY() {
+        return y;
+    }
     public void setY(int y, int pos) {
         this.y[pos] = y;
     }
 
     public void setS(int s, int pos) {
         this.s[pos] = s;
+    }
+    public int[] getFullS() {
+        return s;
     }
     public int getS(int pos) {
         return s[pos];
@@ -244,12 +266,18 @@ class Chromosomes {
     public void setA(double A, int pos) {
         this.A[pos] = A;
     }
+    public double[] getFullA() {
+        return A;
+    }
     public double getA(int pos) {
         return A[pos];
     }
 
     public void setB(int B, int pos) {
         this.B[pos] = B;
+    }
+    public int[] getFullB() {
+        return n;
     }
     public int getB(int pos) {
         return B[pos];
@@ -258,12 +286,18 @@ class Chromosomes {
     public void setF(double f, int pos) {
         this.f[pos] = f;
     }
+    public double[] getFullF() {
+        return f;
+    }
     public double getF(int pos) {
         return f[pos];
     }
 
     public void setN(int n, int pos) {
         this.n[pos] = n;
+    }
+    public int[] getFullN() {
+        return n;
     }
     public int getN(int pos) {
         return n[pos];
