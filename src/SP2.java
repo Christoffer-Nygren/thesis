@@ -6,7 +6,7 @@ import java.security.SecureRandom;
 
 public class SP2 {
     public static void main(String[] args) {
-        int generations = 300;
+        int generations = 3000;
         int currentGen = 0;
         int poolSize = 50;
         int variants = 5;
@@ -305,7 +305,8 @@ class Chromosomes {
 
     public boolean checkConstraint(int Y, boolean first) {
         if (!first) fixSum();
-        return countSum() == Y;
+        if (checkDelayCon()) return countSum() == Y;
+        return false;
     }
 
     private void fixSum() {
@@ -350,6 +351,20 @@ class Chromosomes {
             int num =rn.nextInt(5);
             setS(1, num);
         }
+    }
+
+    public boolean checkDelayCon() {
+        for (int i = 0; i < s.length; i++) {
+            if ( (s[i] * ((erlangC(i)/((n[i] * f[i]))-y[i]) + (1/f[i]))) > 1) return false;
+        }
+        return  true;
+    }
+
+    private double erlangC(int pos){
+        int N = n[pos];
+        double A = (y[pos])/f[pos];
+        double v = (Math.pow(A, N) / N) * (N / (N - A));
+        return v / ((Math.pow(A, 0)) + v);
     }
 
     public void modifySum(int loops, boolean add) {
