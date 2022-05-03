@@ -1,20 +1,6 @@
-Best for workload 1000, Fitness score 1.1852477940792183, Positions:224, 265, 110, 223, 178
+Best for workload 1000, Fitness score 37.7916783887009, Positions:223, 225, 159, 170, 223, Sum calculated: 0.026460851770451765, Power: 2.3246904
 
-Best for workload 2000, Fitness score 0.26277016735274206, Positions:418, 311, 413, 424, 434
+Best for workload 2000, Fitness score 0.360748545174637, Positions:425, 333, 413, 413, 416, Sum calculated: 2.772013950925024, Power: 5.0862788
 
-Best for workload 3000, Fitness score 0.1438908280932886, Positions:374, 619, 611, 609, 787
-
-Best for workload 4000, Fitness score 0.11158744257038679, Positions:814, 759, 807, 812, 808
-
-Best for workload 5000, Fitness score 0.0709378130703588, Positions:1174, 1005, 856, 845, 1120
-
-Best for workload 6000, Fitness score 0.05266882054154144, Positions:1589, 828, 1204, 1208, 1171
-
-Best for workload 7000, Fitness score 0.048690602619139954, Positions:1403, 1451, 1513, 1378, 1255
-
-Best for workload 8000, Fitness score 0.033383602704003534, Positions:1603, 1750, 1687, 1422, 1538
-
-Best for workload 9000, Fitness score 0.028714025116891324, Positions:1977, 1773, 1745, 1703, 1802
-
-Best for workload 10000, Fitness score 0.023911673149435993, Positions:2133, 2106, 2074, 1685, 2002
+Best for workload 3000, Fitness score 0.1723900085438219, Positions:481, 691, 609, 609, 610, Sum calculated: 5.800800222976948, Power: 8.304974399999999
 

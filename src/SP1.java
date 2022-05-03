@@ -6,10 +6,11 @@ import java.security.SecureRandom;
 
 public class SP1 {
     public static void main(String[] args) {
-        int generations = 3000;
+        int generations = 5000;
         int currentGen = 0;
-        int poolSize = 30;
+        int poolSize = 100;
         int variants = 5;
+        int mutationRate = 1;
         ChromosomeX[] generationalTops = new ChromosomeX[generations];
         ChromosomeX generationalBest;
         int[] X = {1000,2000,3000,4000,5000,6000,7000,8000,9000,10000}; // Workloads
@@ -21,7 +22,7 @@ public class SP1 {
             generationalTops[currentGen] = generationalBest;
             currentGen++;
             while (currentGen < generations) {
-                pool = progressiveGenerations(pool, X[i], V[i]);
+                pool = progressiveGenerations(pool, X[i], V[i], mutationRate);
                 generationalBest = currentBest(pool, V[i]);
                 System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction(V[i]));
                 generationalTops[currentGen] = generationalBest;
@@ -39,8 +40,9 @@ public class SP1 {
             createFile();
             FileWriter myWriter = new FileWriter("registry.txt", true);
             BufferedWriter bw = new BufferedWriter(myWriter);
-            bw.write("Best for workload "+ X + ", Fitness score " + c.fitnessFunction(V) + ", Positions:" + c.getX(0) + ", "
-                    + c.getX(1) + ", " + c.getX(2) +", " + c.getX(3) + ", " + c.getX(4) + "\n");
+            bw.write("Best for workload "+ X + ", Fitness score " + c.fitnessFunction(V) + ", Positions:"
+                    + c.getX(0) + ", " + c.getX(1) + ", " + c.getX(2) +", " + c.getX(3) + ", "
+                    + c.getX(4) + ", Sum calculated: " +  c.sum(V) + ", Power: " + c.pFog() + "\n");
             bw.newLine();
             bw.close();
             myWriter.close();
@@ -65,10 +67,10 @@ public class SP1 {
         }
     }
 
-    private static ChromosomeX[] progressiveGenerations(ChromosomeX[] pool, int X, double V ) {
+    private static ChromosomeX[] progressiveGenerations(ChromosomeX[] pool, int X, double V, int mutationRate ) {
         ChromosomeX[] newPop = new ChromosomeX[pool.length];
         for (int i = 0; i < newPop.length; i++) {
-            ChromosomeX child = getChild(pool, V);
+            ChromosomeX child = getChild(pool, V, mutationRate, X);
             if (child.countSum() > X) {
                 child.modifySum((child.countSum() - X), false);
             } else if (child.countSum() < X) {
@@ -79,11 +81,12 @@ public class SP1 {
         return newPop;
     }
 
-    private static ChromosomeX getChild(ChromosomeX[] pool, double V) {
+    private static ChromosomeX getChild(ChromosomeX[] pool, double V, int mutationRate, int X) {
         ChromosomeX parent1 = pickRandomParent(pool,V);
         ChromosomeX parent2 = pickRandomParent(pool,V);
         SecureRandom rn = new SecureRandom();
         int crossover = rn.nextInt(5);
+        int mutation = rn.nextInt(100);
         int[] parentVar1 = {parent1.getX(0),parent1.getX(1),parent1.getX(2),parent1.getX(3),parent1.getX(4)};
         int[] parentVar2 = {parent2.getX(0),parent2.getX(1),parent2.getX(2),parent2.getX(3),parent2.getX(4)};
         int[] newChild = new int[parentVar1.length];
@@ -98,6 +101,7 @@ public class SP1 {
         for (int i = 0; i < 5; i++) {
             child.setX(newChild[i], i);
         }
+        if (mutation <= mutationRate) child.mutate(X);
         return child;
     }
 
@@ -199,8 +203,7 @@ class ChromosomeX {
             }
         }
     }
-
-    public double fitnessFunction(double V) {
+    public double sum(Double V) {
         double Z = 0;
         double a = 0.0000011;
         double b = 0.0021;
@@ -208,6 +211,31 @@ class ChromosomeX {
         for (int j : x) {
             Z += (a * j * j) + (b * j) + c + (1 / (V - j));
         }
-        return 1 / Z;
+        return Z;
+    }
+
+    public double pFog() {
+        double Z = 0;
+        double a = 0.0000011;
+        double b = 0.0021;
+        short c = 0;
+        for (int j : x) {
+            Z += (a * j * j) + (b * j) + c;
+        }
+        return Z;
+    }
+    public void mutate(int X) {
+        SecureRandom rn = new SecureRandom();
+        int pos = rn.nextInt(x.length);
+        setX(rn.nextInt(1000), pos);
+        if (!checkConstraint(X)) {
+            int loops = X - countSum();
+            if (loops > 0) modifySum(loops, false);
+            else if (loops < 0) modifySum(loops, true);
+        }
+    }
+
+    public double fitnessFunction(double V) {
+        return 1 / sum(V);
     }
 }
