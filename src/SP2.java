@@ -7,27 +7,28 @@ import java.security.SecureRandom;
 public class SP2 {
     public static void main(String[] args) {
         int generations = 3000;
+        int mutationRate = 5;
         int currentGen = 0;
         int poolSize = 50;
-        int variants = 5;
+        int variants = 3;
         Chromosomes[] generationalTops = new Chromosomes[generations];
         Chromosomes generationalBest;
         int[] Y = {1000,2000,3000,4000,5000,6000,7000,8000,9000,10000}; // Workloads
-        for (int i = 0; i < Y.length; i++) {
-            Chromosomes[] pool = generatePool(poolSize, variants, Y[i]);
+        for (int j : Y) {
+            Chromosomes[] pool = generatePool(poolSize, variants, j);
             generationalBest = currentBest(pool);
             System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction());
             generationalTops[currentGen] = generationalBest;
             currentGen++;
             while (currentGen < generations) {
-                pool = progressiveGenerations(pool, Y[i]);
+                pool = progressiveGenerations(pool, j, mutationRate);
                 generationalBest = currentBest(pool);
                 System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction());
                 generationalTops[currentGen] = generationalBest;
                 currentGen++;
             }
             Chromosomes absoluteBest = currentBest(generationalTops);
-            addToRegistry(absoluteBest, Y[i]);
+            addToRegistry(absoluteBest, j);
 
             currentGen = 0;
         }
@@ -81,8 +82,9 @@ public class SP2 {
         }
     }
 
-    private static Chromosomes[] progressiveGenerations(Chromosomes[] pool, int Y) {
+    private static Chromosomes[] progressiveGenerations(Chromosomes[] pool, int Y, int mutationRate) {
         Chromosomes[] newPop = new Chromosomes[pool.length];
+        SecureRandom rn = new SecureRandom();
         for (int i = 0; i < newPop.length; i++) {
             Chromosomes child = getChild(pool);
             if (child.countSum() > Y) {
@@ -90,6 +92,8 @@ public class SP2 {
             } else if (child.countSum() < Y) {
                 child.modifySum((Y - child.countSum()), true);
             }
+            int mutation = rn.nextInt(100);
+            if (mutation <= mutationRate) child.mutate();
             child.checkConstraint(Y, false);
             child.checkS();
             newPop[i] =  child;
@@ -103,15 +107,11 @@ public class SP2 {
         Chromosomes child = new Chromosomes();
         int[] y = crossoverLoop(parent1.getFullY(), parent2.getFullY());
         int[] s = crossoverLoop(parent1.getFullS(), parent2.getFullS());
-        double[] A = crossoverLoop(parent1.getFullA(), parent2.getFullA());
-        int[] B = crossoverLoop(parent1.getFullB(), parent2.getFullB());
         double[] f = crossoverLoop(parent1.getFullF(), parent2.getFullF());
         int[] n = crossoverLoop(parent1.getFullN(), parent2.getFullN());
         for (int i = 0; i < 5; i++) {
             child.setY(y[i], i);
             child.setS(s[i], i);
-            child.setA(A[i], i);
-            child.setB(B[i], i);
             child.setF(f[i], i);
             child.setN(n[i], i);
         }
@@ -120,7 +120,7 @@ public class SP2 {
     }
     private static int[] crossoverLoop(int[] a, int[] b) {
         SecureRandom rn = new SecureRandom();
-        int crossover = rn.nextInt(5);
+        int crossover = rn.nextInt(a.length);
         int[] newChild = new int[a.length];
         for (int i = 0; i < a.length; i++) {
             if (i < crossover) {
@@ -134,7 +134,7 @@ public class SP2 {
     }
     private static double[] crossoverLoop(double[] a, double[] b) {
         SecureRandom rn = new SecureRandom();
-        int crossover = rn.nextInt(5);
+        int crossover = rn.nextInt(a.length);
         double[] newChild = new double[a.length];
         for (int i = 0; i < a.length; i++) {
             if (i < crossover) {
@@ -180,13 +180,12 @@ public class SP2 {
             if (c == null) c = cc;
             else if (c.fitnessFunction() < c.fitnessFunction()) c = cc;
         }
-        System.out.print( "Positions A:" + c.getA(0) + ", "
-                + c.getA(1) + ", " + c.getA(2) +", " + c.getA(3) + ", " + c.getA(4) + "\n" + ", Positions B:" + c.getB(0) + ", "
-                + c.getB(1) + ", " + c.getB(2) +", " + c.getB(3) + ", " + c.getB(4) + "\n" + ", Positions S:" + c.getS(0) + ", "
-                + c.getS(1) + ", " + c.getS(2) +", " + c.getS(3) + ", " + c.getS(4) + "\n" + ", Positions F:" + c.getF(0) + ", "
-                + c.getF(1) + ", " + c.getF(2) +", " + c.getF(3) + ", " + c.getF(4) + "\n" + ", Positions N:" + c.getN(0) + ", "
-                + c.getN(1) + ", " + c.getN(2) +", " + c.getN(3) + ", " + c.getN(4) + "\n" + ", Positions Y:" + c.getY(0) + ", "
-                + c.getY(1) + ", " + c.getY(2) +", " + c.getY(3) + ", " + c.getY(4) + "\n");
+        assert c != null;
+        System.out.print(
+                        ", Positions S:" + c.getS(0) + ", " + c.getS(1) + ", " + c.getS(2) + "\n"
+                        + ", Positions F:" + c.getF(0) + ", " + c.getF(1) + ", " + c.getF(2) + "\n"
+                        + ", Positions N:" + c.getN(0) + ", " + c.getN(1) + ", " + c.getN(2) + "\n"
+                        + ", Positions Y:" + c.getY(0) + ", " + c.getY(1) + ", " + c.getY(2) + "\n");
 
         return c;
     }
@@ -205,8 +204,6 @@ public class SP2 {
 
 
     private static Chromosomes generateChromosome(int variants, int Y) {
-        double[] aVal = {3.206, 4.485, 2.370};
-        int[] bVal = {68, 53, 70};
         double[] fMax = {3.4, 2.4, 4.0};
         int[] nMax = {30000, 60000, 25000};
         int fMin = 1;
@@ -217,10 +214,6 @@ public class SP2 {
         }
         int rValue = random.nextInt(3);
         for (int j = 0; j < variants; j++) {
-            c.setA(aVal[rValue], j);
-            rValue = random.nextInt(3);
-            c.setB(bVal[rValue], j);
-            rValue = random.nextInt(3);
             c.setF(random.nextDouble(fMax[rValue]) + fMin, j);
             rValue = random.nextInt(3);
             c.setN(random.nextInt(nMax[rValue]) + fMin, j);
@@ -236,12 +229,12 @@ public class SP2 {
 }
 
 class Chromosomes {
-    private int[] y = new int[5];
-    private int[] s = new int[5];
-    private double[] A = new double[5];
-    private int[] B = new int[5];
-    private double[] f = new double[5];
-    private int[] n = new int[5];
+    private final int[] y = new int[3];
+    private final int[] s = new int[3];
+    private final double[] A = {3.206, 4.485, 2.370};
+    private final int[] B = {68, 53, 70};
+    private final double[] f = new double[3];
+    private final int[] n = new int[3];
 
     public int getY(int pos) {
         return y[pos];
@@ -263,24 +256,12 @@ class Chromosomes {
         return s[pos];
     }
 
-    public void setA(double A, int pos) {
-        this.A[pos] = A;
-    }
     public double[] getFullA() {
         return A;
     }
-    public double getA(int pos) {
-        return A[pos];
-    }
 
-    public void setB(int B, int pos) {
-        this.B[pos] = B;
-    }
     public int[] getFullB() {
         return n;
-    }
-    public int getB(int pos) {
-        return B[pos];
     }
 
     public void setF(double f, int pos) {
@@ -322,14 +303,9 @@ class Chromosomes {
             if (count == 5) count = 0;
             if (s[count] != 0) {
                 setY(getY(count) + 1, count);
+                count++;
             }
             sum--;
-        }
-        for(int i = 0; i < sum; i++) {
-            if (s[i] != 0) {
-                sum += y[i];
-                setY(0, i);
-            }
         }
     }
 
@@ -344,7 +320,10 @@ class Chromosomes {
     public void checkS() {
         boolean zero = true;
         for (int i: s) {
-            if (i == 1) zero = false;
+            if (i == 1) {
+                zero = false;
+                break;
+            }
         }
         if (zero) {
             SecureRandom rn = new SecureRandom();
@@ -365,6 +344,12 @@ class Chromosomes {
         double A = (y[pos])/f[pos];
         double v = (Math.pow(A, N) / N) * (N / (N - A));
         return v / ((Math.pow(A, 0)) + v);
+    }
+
+    public void mutate() {
+        SecureRandom rn = new SecureRandom();
+        int toMutate = rn.nextInt(4);
+
     }
 
     public void modifySum(int loops, boolean add) {
