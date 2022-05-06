@@ -5,15 +5,17 @@ import java.io.IOException;
 import java.security.SecureRandom;
 
 public class SP2 {
+    private static final SecureRandom rn = new SecureRandom(new byte[]{0, 0, 1, 1, 2, 2, 3, 3});
+    private static final int selectionSize = 5;
+    private static final int mutationRate = 10;
+    private static final int[] Y = {1000,2000,3000,4000,5000,6000,7000,8000,9000,10000}; // Workloads
     public static void main(String[] args) {
-        int generations = 3000;
-        int mutationRate = 5;
+        int generations = 50000;
         int currentGen = 0;
-        int poolSize = 50;
+        int poolSize = 100;
         int variants = 3;
         Chromosomes[] generationalTops = new Chromosomes[generations];
         Chromosomes generationalBest;
-        int[] Y = {1000,2000,3000,4000,5000,6000,7000,8000,9000,10000}; // Workloads
         for (int j : Y) {
             Chromosomes[] pool = generatePool(poolSize, variants, j);
             generationalBest = currentBest(pool);
@@ -21,7 +23,7 @@ public class SP2 {
             generationalTops[currentGen] = generationalBest;
             currentGen++;
             while (currentGen < generations) {
-                pool = progressiveGenerations(pool, j, mutationRate);
+                pool = progressiveGenerations(pool, j);
                 generationalBest = currentBest(pool);
                 System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction());
                 generationalTops[currentGen] = generationalBest;
@@ -45,7 +47,8 @@ public class SP2 {
                     ", Positions S:" + toString(c.getFullS())  + "\n" +
                     ", Positions F:" + toString(c.getFullF())  + "\n" +
                     ", Positions N:" + toString(c.getFullN())  + "\n" +
-                    ", Positions Y:" + toString(c.getFullY())  + "\n");
+                    ", Positions Y:" + toString(c.getFullY())  + "\n" +
+                    ", Power: " + c.pCloud() + ", Delay: " + c.dCloud());
             bw.newLine();
             bw.close();
             myWriter.close();
@@ -82,9 +85,8 @@ public class SP2 {
         }
     }
 
-    private static Chromosomes[] progressiveGenerations(Chromosomes[] pool, int Y, int mutationRate) {
+    private static Chromosomes[] progressiveGenerations(Chromosomes[] pool, int Y) {
         Chromosomes[] newPop = new Chromosomes[pool.length];
-        SecureRandom rn = new SecureRandom();
         for (int i = 0; i < newPop.length; i++) {
             Chromosomes child = getChild(pool);
             if (child.countSum() > Y) {
@@ -93,23 +95,21 @@ public class SP2 {
                 child.modifySum((Y - child.countSum()), true);
             }
             int mutation = rn.nextInt(100);
-            if (mutation <= mutationRate) child.mutate();
+            if (mutation <= mutationRate) child.mutate(Y);
             child.checkConstraint(Y, false);
-            child.checkS();
             newPop[i] =  child;
         }
         return newPop;
     }
 
     private static Chromosomes getChild(Chromosomes[] pool) {
-        Chromosomes parent1 = pickRandomParent(pool);
-        Chromosomes parent2 = pickRandomParent(pool);
-        Chromosomes child = new Chromosomes();
-        int[] y = crossoverLoop(parent1.getFullY(), parent2.getFullY());
-        int[] s = crossoverLoop(parent1.getFullS(), parent2.getFullS());
-        double[] f = crossoverLoop(parent1.getFullF(), parent2.getFullF());
-        int[] n = crossoverLoop(parent1.getFullN(), parent2.getFullN());
-        for (int i = 0; i < 5; i++) {
+        Chromosomes[] parents = pickRandomParent(pool);
+        Chromosomes child = new Chromosomes(rn);
+        int[] y = crossoverLoop(parents[0].getFullY(), parents[1].getFullY());
+        int[] s = crossoverLoop(parents[0].getFullS(), parents[1].getFullS());
+        double[] f = crossoverLoop(parents[0].getFullF(), parents[1].getFullF());
+        int[] n = crossoverLoop(parents[0].getFullN(), parents[1].getFullN());
+        for (int i = 0; i < 3; i++) {
             child.setY(y[i], i);
             child.setS(s[i], i);
             child.setF(f[i], i);
@@ -119,7 +119,6 @@ public class SP2 {
         return child;
     }
     private static int[] crossoverLoop(int[] a, int[] b) {
-        SecureRandom rn = new SecureRandom();
         int crossover = rn.nextInt(a.length);
         int[] newChild = new int[a.length];
         for (int i = 0; i < a.length; i++) {
@@ -133,7 +132,6 @@ public class SP2 {
 
     }
     private static double[] crossoverLoop(double[] a, double[] b) {
-        SecureRandom rn = new SecureRandom();
         int crossover = rn.nextInt(a.length);
         double[] newChild = new double[a.length];
         for (int i = 0; i < a.length; i++) {
@@ -146,39 +144,29 @@ public class SP2 {
         return newChild;
     }
 
-    private static Chromosomes pickRandomParent(Chromosomes[] pool) {
-        double random = Math.random();
-        double progress = 0.0;
-        Chromosomes c = null;
-        for (Chromosomes cx : pool) {
-            progress += calculateProbability(cx, pool);
-            if (progress >= random) {
-                c = cx;
-                break;
+    private static Chromosomes[] pickRandomParent(Chromosomes[] pool) {
+        Chromosomes[] selection = new Chromosomes[2];
+
+        for (int i = 0; i < selectionSize; i++) {
+            if (selection[0] == null) selection[i] = pool[rn.nextInt(pool.length)];
+            else if (selection[1] == null) selection[i] = pool[rn.nextInt(pool.length)];
+            else {
+                Chromosomes c = pool[rn.nextInt(pool.length)];
+                if (c.fitnessFunction() < selection[0].fitnessFunction()) selection[0] = c;
+                else if (c.fitnessFunction() < selection[1].fitnessFunction()) selection[1] = c;
             }
         }
-        return c;
 
+
+        return selection;
     }
 
-
-    private static double calculateProbability(Chromosomes c, Chromosomes[] population){
-        return c.fitnessFunction() / calculateTotalFitness(population);
-    }
-
-    private static double calculateTotalFitness(Chromosomes[] pop) {
-        double totalFit = 0.0;
-        for (Chromosomes c : pop) {
-            totalFit += c.fitnessFunction();
-        }
-        return totalFit;
-    }
 
     private static Chromosomes currentBest(Chromosomes[] pool) {
         Chromosomes c = null;
         for (Chromosomes cc: pool) {
             if (c == null) c = cc;
-            else if (c.fitnessFunction() < c.fitnessFunction()) c = cc;
+            else if (cc.fitnessFunction() < c.fitnessFunction()) c = cc;
         }
         assert c != null;
         System.out.print(
@@ -207,21 +195,19 @@ public class SP2 {
         double[] fMax = {3.4, 2.4, 4.0};
         int[] nMax = {30000, 60000, 25000};
         int fMin = 1;
-        SecureRandom random = new SecureRandom();
-        Chromosomes c = new Chromosomes();
+        Chromosomes c = new Chromosomes(rn);
         for (int j = 0; j < variants; j++) {
-            c.setY(random.nextInt(Y-1) + 1, j);
+            c.setY(rn.nextInt(Y-1) + 1, j);
         }
-        int rValue = random.nextInt(3);
+        int rValue;
         for (int j = 0; j < variants; j++) {
-            c.setF(random.nextDouble(fMax[rValue]) + fMin, j);
-            rValue = random.nextInt(3);
-            c.setN(random.nextInt(nMax[rValue]) + fMin, j);
-            rValue = random.nextInt(2);
+            c.setF(rn.nextDouble(fMax[j]) + fMin, j);
+            rValue = rn.nextInt(3);
+            c.setN(rn.nextInt(nMax[rValue]) + fMin, j);
+            rValue = rn.nextInt(2);
             c.setS(rValue, j);
 
         }
-        c.checkS();
         c.checkConstraint(Y, false);
         return c;
     }
@@ -235,6 +221,12 @@ class Chromosomes {
     private final int[] B = {68, 53, 70};
     private final double[] f = new double[3];
     private final int[] n = new int[3];
+    private final int[] nMax = {30000, 60000, 25000};
+    private final SecureRandom rn;
+
+    Chromosomes(SecureRandom rn) {
+        this.rn = rn;
+    }
 
     public int getY(int pos) {
         return y[pos];
@@ -261,7 +253,7 @@ class Chromosomes {
     }
 
     public int[] getFullB() {
-        return n;
+        return B;
     }
 
     public void setF(double f, int pos) {
@@ -285,9 +277,82 @@ class Chromosomes {
     }
 
     public boolean checkConstraint(int Y, boolean first) {
+        checkS();
+        checkSum(Y);
+        checkN();
         if (!first) fixSum();
         if (checkDelayCon()) return countSum() == Y;
         return false;
+    }
+
+    private void checkN() {
+        for (int i = 0; i < n.length; i++) {
+            if (s[i] == 0 && n[i] == 0) {
+                setN(rn.nextInt(nMax[i]) + 1, i);
+                checkN();
+            }
+        }
+    }
+
+    public void checkSum(int Y) {
+        if (countSum() < Y) adjustSum(Y - countSum(), true);
+        else if (countSum() > Y) adjustSum(Y - countSum(), false);
+    }
+
+    private void adjustSum(int loops, boolean add) {
+        int count = 0;
+        int amount = loops;
+        while (amount > 0) {
+            if (count > 2) {
+                count = 0;
+            }
+            if (add){
+                if (s[count] != 0) {
+                    setY(getY(count) + 1, count);
+                    amount--;
+                }
+            } else {
+                if (s[count] != 0) {
+                    setY(getY(count) - 1, count);
+                    amount--;
+                }
+            }
+            count++;
+        }
+    }
+
+    public double pCloud() {
+        double Z = 0;
+        for (int j = 0; j < y.length; j++) {
+            Z += (s[j]*n[j]*(A[j]*(Math.pow(f[j], 3)) + B[j]));
+        }
+        return Z;
+    }
+
+    public double dCloud() {
+        double Z = 0;
+        for (int i = 0; i < s.length; i++) {
+            Z += (s[i] * ((erlangC(i)/((n[i] * f[i]))-y[i]) + (1/f[i])));
+        }
+        return Z;
+    }
+
+    public void mutate(int Y) {
+        double[] fMax = {3.4, 2.4, 4.0};
+        int[] nMax = {30000, 60000, 25000};
+        int toMutate = rn.nextInt(4);
+        int pos = rn.nextInt(3);
+        if (toMutate == 0) {
+            setY(rn.nextInt(Y), pos);
+        } else if (toMutate == 1) {
+            setS(rn.nextInt(1), pos);
+        } else if (toMutate == 2) {
+            setF(rn.nextDouble(fMax[pos]) + 1, pos);
+        } else {
+            setN(rn.nextInt(nMax[pos]), pos);
+        }
+        checkConstraint(Y, false);
+
     }
 
     private void fixSum() {
@@ -318,42 +383,39 @@ class Chromosomes {
     }
 
     public void checkS() {
-        boolean zero = true;
-        for (int i: s) {
-            if (i == 1) {
-                zero = false;
-                break;
-            }
-        }
+        int sum = 0;
+        for (int i : s) sum += i;
+
+        boolean zero = sum == 0;
         if (zero) {
-            SecureRandom rn = new SecureRandom();
-            int num =rn.nextInt(5);
-            setS(1, num);
+            int pos =rn.nextInt(3);
+            setS(1, pos);
         }
     }
 
     public boolean checkDelayCon() {
         for (int i = 0; i < s.length; i++) {
-            if ( (s[i] * ((erlangC(i)/((n[i] * f[i]))-y[i]) + (1/f[i]))) > 1) return false;
+            double delay = (s[i] * ((erlangC(i)/((n[i] * f[i]))-y[i]) + (1/f[i])));
+            if ( delay > 1 || delay < 0) return false;
         }
         return  true;
     }
-
+    private int factorial(int n){
+        int sum = 0;
+        for (int i = 0; i < n; i++) {
+            sum += n * n-i;
+        }
+        return sum;
+    }
     private double erlangC(int pos){
         int N = n[pos];
         double A = (y[pos])/f[pos];
-        double v = (Math.pow(A, N) / N) * (N / (N - A));
+        double v = (Math.pow(A, N) / factorial(N)) * (N / (N - A));
         return v / ((Math.pow(A, 0)) + v);
     }
 
-    public void mutate() {
-        SecureRandom rn = new SecureRandom();
-        int toMutate = rn.nextInt(4);
-
-    }
 
     public void modifySum(int loops, boolean add) {
-        SecureRandom rn = new SecureRandom();
         for (int i = 0; i < loops; i++) {
             int pos = rn.nextInt(y.length);
             if (add) setY(getY(pos) + 1, pos);
@@ -371,6 +433,6 @@ class Chromosomes {
         for (int j = 0; j < y.length; j++) {
             Z += (s[j]*n[j]*(A[j]*(Math.pow(f[j], 3)) + B[j]));
         }
-        return 1 / (Z);
+        return Z;
     }
 }
