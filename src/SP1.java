@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.security.SecureRandom;
 
 public class SP1 {
+    private static final SecureRandom rn = new SecureRandom(new byte[]{0, 0, 1, 1, 2, 2, 3, 3});
+    private static final int selectionSize = 10;
     public static void main(String[] args) {
-        int generations = 3000;
+        int generations = 50000;
         int currentGen = 0;
         int poolSize = 100;
         int variants = 4;
-        int mutationRate = 1;
+        int mutationRate = 10;
         ChromosomeX[] generationalTops = new ChromosomeX[generations];
         ChromosomeX generationalBest;
         int[] X = {1000,2000,3000,4000,5000,6000,7000,8000,9000,10000}; // Workloads
@@ -84,15 +86,13 @@ public class SP1 {
     }
 
     private static ChromosomeX getChild(ChromosomeX[] pool, double V, int mutationRate, int X) {
-        ChromosomeX parent1 = pickRandomParent(pool,V);
-        ChromosomeX parent2 = pickRandomParent(pool,V);
-        SecureRandom rn = new SecureRandom();
+        ChromosomeX[] parents = pickRandomParent(pool, V);
         int crossover = rn.nextInt(4);
         int mutation = rn.nextInt(100);
-        int[] parentVar1 = {parent1.getX(0),parent1.getX(1),parent1.getX(2),parent1.getX(3)};
-        int[] parentVar2 = {parent2.getX(0),parent2.getX(1),parent2.getX(2),parent2.getX(3)};
+        int[] parentVar1 = {parents[0].getX(0),parents[0].getX(1),parents[0].getX(2),parents[0].getX(3)};
+        int[] parentVar2 = {parents[1].getX(0),parents[1].getX(1),parents[1].getX(2),parents[1].getX(3)};
         int[] newChild = new int[parentVar1.length];
-        ChromosomeX child = new ChromosomeX();
+        ChromosomeX child = new ChromosomeX(rn);
         for (int i = 0; i < parentVar1.length; i++) {
             if (i < crossover) {
                 newChild[i] = parentVar1[i];
@@ -107,39 +107,29 @@ public class SP1 {
         return child;
     }
 
-    private static ChromosomeX pickRandomParent(ChromosomeX[] pool, double V) {
-        double random = Math.random();
-        double progress = 0.0;
-        ChromosomeX c = null;
-        for (ChromosomeX cx : pool) {
-            progress += calculateProbability(cx, pool, V);
-            if (progress >= random) {
-                c = cx;
-                break;
+
+    private static ChromosomeX[] pickRandomParent(ChromosomeX[] pool, double V) {
+        ChromosomeX[] selection = new ChromosomeX[2];
+
+        for (int i = 0; i < selectionSize; i++) {
+            if (selection[0] == null) selection[i] = pool[rn.nextInt(pool.length)];
+            else if (selection[1] == null) selection[i] = pool[rn.nextInt(pool.length)];
+            else {
+                ChromosomeX c = pool[rn.nextInt(pool.length)];
+                if (c.fitnessFunction(V) < selection[0].fitnessFunction(V)) selection[0] = c;
+                else if (c.fitnessFunction(V) < selection[1].fitnessFunction(V)) selection[1] = c;
             }
         }
-        return c;
-
-    }
 
 
-    private static double calculateProbability(ChromosomeX c, ChromosomeX[] population, double V){
-        return c.fitnessFunction(V) / calculateTotalFitness(population, V);
-    }
-
-    private static double calculateTotalFitness(ChromosomeX[] pop, double V) {
-        double totalFit = 0.0;
-        for (ChromosomeX c : pop) {
-            totalFit += c.fitnessFunction(V);
-        }
-        return totalFit;
+        return selection;
     }
 
     private static ChromosomeX currentBest(ChromosomeX[] pool, double V) {
         ChromosomeX best = null;
         for (ChromosomeX c: pool) {
             if (best == null) best = c;
-            else if (best.fitnessFunction(V) < c.fitnessFunction(V)) best = c;
+            else if (best.fitnessFunction(V) > c.fitnessFunction(V)) best = c;
         }
         assert best != null;
         System.out.print(" X: " + best.getX(0) + ", " + best.getX(1) + ", " + best.getX(2) + ", " + best.getX(3) +
@@ -162,10 +152,9 @@ public class SP1 {
 
 
     private static ChromosomeX generateChromosome(int variants, int X) {
-        SecureRandom random = new SecureRandom();
-        ChromosomeX chromosome = new ChromosomeX();
+        ChromosomeX chromosome = new ChromosomeX(rn);
         for (int j = 0; j < variants; j++) {
-            chromosome.setX(random.nextInt(X-1) + 1, j);
+            chromosome.setX(rn.nextInt(X-1) + 1, j);
         }
         return chromosome;
     }
@@ -176,6 +165,11 @@ class ChromosomeX {
     private final double a = 0.0000011;
     private final double b = 0.0021;
     private final short c = 0;
+    private final SecureRandom rn;
+
+    public ChromosomeX(SecureRandom rn) {
+        this.rn = rn;
+    }
 
     public int getX(int pos) {
         return x[pos];
@@ -197,7 +191,6 @@ class ChromosomeX {
     }
 
     public void modifySum(int loops, boolean add) {
-        SecureRandom rn = new SecureRandom();
         for (int i = 0; i < loops; i++) {
             int pos = rn.nextInt(x.length);
             if (add) setX(getX(pos) + 1, pos);
@@ -233,17 +226,16 @@ class ChromosomeX {
         return Z;
     }
     public void mutate(int X) {
-        /*SecureRandom rn = new SecureRandom();
         int pos = rn.nextInt(x.length);
         setX(rn.nextInt(1000), pos);
         if (checkConstraint(X)) {
             int loops = X - countSum();
-            if (loops > 0) modifySum(loops, false);
-            else if (loops < 0) modifySum(loops, true);
-        }*/
+            if (loops > 0) modifySum(loops, true);
+            else if (loops < 0) modifySum(loops, false);
+        }
     }
 
     public double fitnessFunction(double V) {
-        return 1 / sum(V);
+        return dFog(V) + pFog();
     }
 }

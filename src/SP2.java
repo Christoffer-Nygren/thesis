@@ -2,15 +2,16 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 
 public class SP2 {
     private static final SecureRandom rn = new SecureRandom(new byte[]{0, 0, 1, 1, 2, 2, 3, 3});
     private static final int selectionSize = 5;
-    private static final int mutationRate = 10;
+    private static final int mutationRate = 1;
     private static final int[] Y = {1000,2000,3000,4000,5000,6000,7000,8000,9000,10000}; // Workloads
     public static void main(String[] args) {
-        int generations = 50000;
+        int generations = 10;
         int currentGen = 0;
         int poolSize = 100;
         int variants = 3;
@@ -42,13 +43,13 @@ public class SP2 {
             FileWriter myWriter = new FileWriter("registry2.txt", true);
             BufferedWriter bw = new BufferedWriter(myWriter);
             bw.write("Best for workload "+ Y + ", Fitness score " + c.fitnessFunction() +
-                    ", Positions A:" + toString(c.getFullA()) + "\n" +
-                    ", Positions B:" + toString(c.getFullB()) + "\n" +
-                    ", Positions S:" + toString(c.getFullS())  + "\n" +
-                    ", Positions F:" + toString(c.getFullF())  + "\n" +
-                    ", Positions N:" + toString(c.getFullN())  + "\n" +
-                    ", Positions Y:" + toString(c.getFullY())  + "\n" +
-                    ", Power: " + c.pCloud() + ", Delay: " + c.dCloud());
+                    "Positions A:" + toString(c.getFullA()) + "\n" +
+                    "Positions B:" + toString(c.getFullB()) + "\n" +
+                    "Positions S:" + toString(c.getFullS())  + "\n" +
+                    "Positions F:" + toString(c.getFullF())  + "\n" +
+                    "Positions N:" + toString(c.getFullN())  + "\n" +
+                    "Positions Y:" + toString(c.getFullY())  + "\n" +
+                    "Power: " + c.pCloud() + ", Delay: " + c.dCloud());
             bw.newLine();
             bw.close();
             myWriter.close();
@@ -88,7 +89,7 @@ public class SP2 {
     private static Chromosomes[] progressiveGenerations(Chromosomes[] pool, int Y) {
         Chromosomes[] newPop = new Chromosomes[pool.length];
         for (int i = 0; i < newPop.length; i++) {
-            Chromosomes child = getChild(pool);
+            Chromosomes child = getChild(pool, Y);
             if (child.countSum() > Y) {
                 child.modifySum((child.countSum() - Y), false);
             } else if (child.countSum() < Y) {
@@ -96,13 +97,22 @@ public class SP2 {
             }
             int mutation = rn.nextInt(100);
             if (mutation <= mutationRate) child.mutate(Y);
-            child.checkConstraint(Y, false);
+            while (!child.checkConstraint(Y, false)) {
+                child = getChild(pool, Y);
+                if (child.countSum() > Y) {
+                    child.modifySum((child.countSum() - Y), false);
+                } else if (child.countSum() < Y) {
+                    child.modifySum((Y - child.countSum()), true);
+                }
+                mutation = rn.nextInt(100);
+                if (mutation <= mutationRate) child.mutate(Y);
+            }
             newPop[i] =  child;
         }
         return newPop;
     }
 
-    private static Chromosomes getChild(Chromosomes[] pool) {
+    private static Chromosomes getChild(Chromosomes[] pool, int Y) {
         Chromosomes[] parents = pickRandomParent(pool);
         Chromosomes child = new Chromosomes(rn);
         int[] y = crossoverLoop(parents[0].getFullY(), parents[1].getFullY());
@@ -116,6 +126,7 @@ public class SP2 {
             child.setN(n[i], i);
         }
 
+        child.checkConstraint(Y, false);
         return child;
     }
     private static int[] crossoverLoop(int[] a, int[] b) {
@@ -208,7 +219,7 @@ public class SP2 {
             c.setS(rValue, j);
 
         }
-        c.checkConstraint(Y, false);
+        if (!c.checkConstraint(Y, false)) generateChromosome(variants, Y);
         return c;
     }
 
@@ -278,16 +289,16 @@ class Chromosomes {
 
     public boolean checkConstraint(int Y, boolean first) {
         checkS();
+        if (!first) fixSum();
         checkSum(Y);
         checkN();
-        if (!first) fixSum();
         if (checkDelayCon()) return countSum() == Y;
         return false;
     }
 
     private void checkN() {
         for (int i = 0; i < n.length; i++) {
-            if (s[i] == 0 && n[i] == 0) {
+            if (s[i] == 1 && n[i] == 0) {
                 setN(rn.nextInt(nMax[i]) + 1, i);
                 checkN();
             }
@@ -301,7 +312,7 @@ class Chromosomes {
 
     private void adjustSum(int loops, boolean add) {
         int count = 0;
-        int amount = loops;
+        int amount = Math.abs(loops);
         while (amount > 0) {
             if (count > 2) {
                 count = 0;
@@ -332,7 +343,10 @@ class Chromosomes {
     public double dCloud() {
         double Z = 0;
         for (int i = 0; i < s.length; i++) {
-            Z += (s[i] * ((erlangC(i)/((n[i] * f[i]))-y[i]) + (1/f[i])));
+            double erlang = erlangC(i);
+            double val = ((n[i] * f[i])-y[i]) + (1/f[i]);
+            double delay = (s[i] * (erlang/val));
+            Z += delay;
         }
         return Z;
     }
@@ -365,12 +379,12 @@ class Chromosomes {
             }
         }
         while (sum != 0) {
-            if (count == 5) count = 0;
+            if (count == 3) count = 0;
             if (s[count] != 0) {
                 setY(getY(count) + 1, count);
-                count++;
+                sum--;
             }
-            sum--;
+            count++;
         }
     }
 
@@ -395,23 +409,27 @@ class Chromosomes {
 
     public boolean checkDelayCon() {
         for (int i = 0; i < s.length; i++) {
-            double delay = (s[i] * ((erlangC(i)/((n[i] * f[i]))-y[i]) + (1/f[i])));
-            if ( delay > 1 || delay < 0) return false;
+            double erlang = erlangC(i);
+            double val = ((n[i] * f[i])-y[i]) + (1/f[i]);
+            double delay = (s[i] * (erlang/val));
+            if ( (delay > 1 && s[i] != 0)|| (delay < 0 && s[i] != 0)) return false;
         }
         return  true;
     }
-    private int factorial(int n){
-        int sum = 0;
+    private long factorial(int n){
+        long sum = 0;
         for (int i = 0; i < n; i++) {
-            sum += n * n-i;
+            sum += (long) n * (n-i);
         }
         return sum;
     }
     private double erlangC(int pos){
         int N = n[pos];
         double A = (y[pos])/f[pos];
-        double v = (Math.pow(A, N) / factorial(N)) * (N / (N - A));
-        return v / ((Math.pow(A, 0)) + v);
+        long pow = (long) Math.pow(A, N);
+        double v = (pow / factorial(N)) * (N / (N - A));
+        double delay = (v / (Math.pow(A, 0) + v));
+        return delay;
     }
 
 
@@ -429,10 +447,6 @@ class Chromosomes {
     }
 
     public double fitnessFunction() {
-        double Z = 0;
-        for (int j = 0; j < y.length; j++) {
-            Z += (s[j]*n[j]*(A[j]*(Math.pow(f[j], 3)) + B[j]));
-        }
-        return Z;
+        return pCloud();
     }
 }
