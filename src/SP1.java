@@ -13,12 +13,12 @@ public class SP1 {
         int poolSize = 100;
         int variants = 4;
         int mutationRate = 10;
-        ChromosomeX[] generationalTops = new ChromosomeX[generations];
-        ChromosomeX generationalBest;
+        Chromosome1[] generationalTops = new Chromosome1[generations];
+        Chromosome1 generationalBest;
         int[] X = {1000,2000,3000,4000,5000,6000,7000,8000,9000,10000}; // Workloads
         double[] V = {280, 512, 758, 1005.5, 1253.7, 1502.8, 1752.17, 2001.55, 2251.22, 2501}; // Service Rates
         for (int i = 0; i < X.length; i++) {
-            ChromosomeX[] pool = generatePool(poolSize, variants, X[i]);
+            Chromosome1[] pool = generatePool(poolSize, variants, X[i]);
             generationalBest = currentBest(pool, V[i]);
             System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction(V[i]));
             generationalTops[currentGen] = generationalBest;
@@ -30,15 +30,15 @@ public class SP1 {
                 generationalTops[currentGen] = generationalBest;
                 currentGen++;
             }
-            ChromosomeX absoluteBest = currentBest(generationalTops, V[i]);
+            Chromosome1 absoluteBest = currentBest(generationalTops, V[i]);
             addToRegistry(absoluteBest, X[i], V[i]);
 
-            generationalTops = new ChromosomeX[generations];
+            generationalTops = new Chromosome1[generations];
             currentGen = 0;
         }
     }
 
-    private static void addToRegistry(ChromosomeX c, int X, double V) {
+    private static void addToRegistry(Chromosome1 c, int X, double V) {
         try {
             createFile();
             FileWriter myWriter = new FileWriter("registry.txt", true);
@@ -71,10 +71,10 @@ public class SP1 {
         }
     }
 
-    private static ChromosomeX[] progressiveGenerations(ChromosomeX[] pool, int X, double V, int mutationRate ) {
-        ChromosomeX[] newPop = new ChromosomeX[pool.length];
+    private static Chromosome1[] progressiveGenerations(Chromosome1[] pool, int X, double V, int mutationRate ) {
+        Chromosome1[] newPop = new Chromosome1[pool.length];
         for (int i = 0; i < newPop.length; i++) {
-            ChromosomeX child = getChild(pool, V, mutationRate, X);
+            Chromosome1 child = getChild(pool, V, mutationRate, X);
             if (child.countSum() > X) {
                 child.modifySum((child.countSum() - X), false);
             } else if (child.countSum() < X) {
@@ -85,14 +85,14 @@ public class SP1 {
         return newPop;
     }
 
-    private static ChromosomeX getChild(ChromosomeX[] pool, double V, int mutationRate, int X) {
-        ChromosomeX[] parents = pickRandomParent(pool, V);
+    private static Chromosome1 getChild(Chromosome1[] pool, double V, int mutationRate, int X) {
+        Chromosome1[] parents = pickRandomParent(pool, V);
         int crossover = rn.nextInt(4);
         int mutation = rn.nextInt(100);
         int[] parentVar1 = {parents[0].getX(0),parents[0].getX(1),parents[0].getX(2),parents[0].getX(3)};
         int[] parentVar2 = {parents[1].getX(0),parents[1].getX(1),parents[1].getX(2),parents[1].getX(3)};
         int[] newChild = new int[parentVar1.length];
-        ChromosomeX child = new ChromosomeX(rn);
+        Chromosome1 child = new Chromosome1(rn);
         for (int i = 0; i < parentVar1.length; i++) {
             if (i < crossover) {
                 newChild[i] = parentVar1[i];
@@ -108,14 +108,14 @@ public class SP1 {
     }
 
 
-    private static ChromosomeX[] pickRandomParent(ChromosomeX[] pool, double V) {
-        ChromosomeX[] selection = new ChromosomeX[2];
+    private static Chromosome1[] pickRandomParent(Chromosome1[] pool, double V) {
+        Chromosome1[] selection = new Chromosome1[2];
 
         for (int i = 0; i < selectionSize; i++) {
             if (selection[0] == null) selection[i] = pool[rn.nextInt(pool.length)];
             else if (selection[1] == null) selection[i] = pool[rn.nextInt(pool.length)];
             else {
-                ChromosomeX c = pool[rn.nextInt(pool.length)];
+                Chromosome1 c = pool[rn.nextInt(pool.length)];
                 if (c.fitnessFunction(V) < selection[0].fitnessFunction(V)) selection[0] = c;
                 else if (c.fitnessFunction(V) < selection[1].fitnessFunction(V)) selection[1] = c;
             }
@@ -125,9 +125,9 @@ public class SP1 {
         return selection;
     }
 
-    private static ChromosomeX currentBest(ChromosomeX[] pool, double V) {
-        ChromosomeX best = null;
-        for (ChromosomeX c: pool) {
+    private static Chromosome1 currentBest(Chromosome1[] pool, double V) {
+        Chromosome1 best = null;
+        for (Chromosome1 c: pool) {
             if (best == null) best = c;
             else if (best.fitnessFunction(V) > c.fitnessFunction(V)) best = c;
         }
@@ -138,10 +138,10 @@ public class SP1 {
         return best;
     }
 
-    private static ChromosomeX[] generatePool(int poolSize , int variants, int X) {
-        ChromosomeX[] chromosomePool = new ChromosomeX[poolSize];
+    private static Chromosome1[] generatePool(int poolSize , int variants, int X) {
+        Chromosome1[] chromosomePool = new Chromosome1[poolSize];
         for (int i = 0; i < chromosomePool.length; i++) {
-            ChromosomeX c = generateChromosome(variants, X);
+            Chromosome1 c = generateChromosome(variants, X);
             while (c.checkConstraint(X)) {
                 c = generateChromosome(variants, X);
             }
@@ -151,8 +151,8 @@ public class SP1 {
     }
 
 
-    private static ChromosomeX generateChromosome(int variants, int X) {
-        ChromosomeX chromosome = new ChromosomeX(rn);
+    private static Chromosome1 generateChromosome(int variants, int X) {
+        Chromosome1 chromosome = new Chromosome1(rn);
         for (int j = 0; j < variants; j++) {
             chromosome.setX(rn.nextInt(X-1) + 1, j);
         }
@@ -160,14 +160,14 @@ public class SP1 {
     }
 }
 
-class ChromosomeX {
+class Chromosome1 {
     private final int[] x = new int[4];
     private final double a = 0.0000011;
     private final double b = 0.0021;
     private final short c = 0;
     private final SecureRandom rn;
 
-    public ChromosomeX(SecureRandom rn) {
+    public Chromosome1(SecureRandom rn) {
         this.rn = rn;
     }
 

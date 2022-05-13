@@ -4,54 +4,51 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.security.SecureRandom;
 
-public class SP2 {
+public class workingSP2 {
     private static final SecureRandom rn = new SecureRandom(new byte[]{0, 0, 1, 1, 2, 2, 3, 3});
-    private static final int selectionSize = 8;
+    private static final int selectionSize = 5;
     private static final int mutationRate = 10;
     private static final int[] Y = {10000,20000,30000,40000,50000,60000,70000,80000,90000,100000}; // Workloads
     public static void main(String[] args) {
-        int generations = 50000;
+        int generations = 59;
         int currentGen = 0;
         int poolSize = 100;
         int variants = 3;
-        Chromosome2[] generationalTops = new Chromosome2[generations];
-        Chromosome2 generationalBest;
+        ChromosomesS[] generationalTops = new ChromosomesS[generations];
+        ChromosomesS generationalBest;
         for (int j : Y) {
-            Chromosome2[] pool = generatePool(poolSize, variants, j);
+            ChromosomesS[] pool = generatePool(poolSize, variants, j);
             generationalBest = currentBest(pool);
             System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction());
             generationalTops[currentGen] = generationalBest;
             currentGen++;
             while (currentGen < generations) {
-                if (currentGen == 2840) {
-                    System.out.println("woo");
-                }
                 pool = progressiveGenerations(pool, j);
                 generationalBest = currentBest(pool);
                 System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction());
                 generationalTops[currentGen] = generationalBest;
                 currentGen++;
             }
-            Chromosome2 absoluteBest = currentBest(generationalTops);
+            ChromosomesS absoluteBest = currentBest(generationalTops);
             addToRegistry(absoluteBest, j);
 
             currentGen = 0;
         }
     }
 
-    private static void addToRegistry(Chromosome2 c, int Y) {
+    private static void addToRegistry(ChromosomesS c, int Y) {
         try {
             createFile();
             FileWriter myWriter = new FileWriter("registry2.txt", true);
             BufferedWriter bw = new BufferedWriter(myWriter);
             bw.write("Best for workload "+ Y + ", Fitness score " + c.fitnessFunction() +
-                    "Positions A:" + toString(c.getFullA()) + "\n" +
-                    "Positions B:" + toString(c.getFullB()) + "\n" +
-                    "Positions S:" + toString(c.getFullS())  + "\n" +
-                    "Positions F:" + toString(c.getFullF())  + "\n" +
-                    "Positions N:" + toString(c.getFullN())  + "\n" +
-                    "Positions Y:" + toString(c.getFullY())  + "\n" +
-                    "Power: " + c.pCloud() + ", Delay: " + c.dCloud());
+                    ", Positions A:" + toString(c.getFullA()) + "\n" +
+                    ", Positions B:" + toString(c.getFullB()) + "\n" +
+                    ", Positions S:" + toString(c.getFullS())  + "\n" +
+                    ", Positions F:" + toString(c.getFullF())  + "\n" +
+                    ", Positions N:" + toString(c.getFullN())  + "\n" +
+                    ", Positions Y:" + toString(c.getFullY())  + "\n" +
+                    ", Power: " + c.pCloud() + ", Delay: " + c.dCloud());
             bw.newLine();
             bw.close();
             myWriter.close();
@@ -76,7 +73,7 @@ public class SP2 {
 
     private static void createFile() {
         try {
-            File myObj = new File("registry.txt");
+            File myObj = new File("registry2.txt");
             if (myObj.createNewFile()) {
                 System.out.println("File created: " + myObj.getName());
             } else {
@@ -88,10 +85,10 @@ public class SP2 {
         }
     }
 
-    private static Chromosome2[] progressiveGenerations(Chromosome2[] pool, int Y) {
-        Chromosome2[] newPop = new Chromosome2[pool.length];
+    private static ChromosomesS[] progressiveGenerations(ChromosomesS[] pool, int Y) {
+        ChromosomesS[] newPop = new ChromosomesS[pool.length];
         for (int i = 0; i < newPop.length; i++) {
-            Chromosome2 child = getChild(pool, Y);
+            ChromosomesS child = getChild(pool);
             if (child.countSum() > Y) {
                 child.modifySum((child.countSum() - Y), false);
             } else if (child.countSum() < Y) {
@@ -99,24 +96,15 @@ public class SP2 {
             }
             int mutation = rn.nextInt(100);
             if (mutation <= mutationRate) child.mutate(Y);
-            while (!child.checkConstraint(Y, false)) {
-                child = getChild(pool, Y);
-                if (child.countSum() > Y) {
-                    child.modifySum((child.countSum() - Y), false);
-                } else if (child.countSum() < Y) {
-                    child.modifySum((Y - child.countSum()), true);
-                }
-                mutation = rn.nextInt(100);
-                if (mutation <= mutationRate) child.mutate(Y);
-            }
+            child.checkConstraint(Y, false);
             newPop[i] =  child;
         }
         return newPop;
     }
 
-    private static Chromosome2 getChild(Chromosome2[] pool, int Y) {
-        Chromosome2[] parents = pickRandomParent(pool);
-        Chromosome2 child = new Chromosome2(rn);
+    private static ChromosomesS getChild(ChromosomesS[] pool) {
+        ChromosomesS[] parents = pickRandomParent(pool);
+        ChromosomesS child = new ChromosomesS(rn);
         int[] y = crossoverLoop(parents[0].getFullY(), parents[1].getFullY());
         int[] s = crossoverLoop(parents[0].getFullS(), parents[1].getFullS());
         double[] f = crossoverLoop(parents[0].getFullF(), parents[1].getFullF());
@@ -128,7 +116,6 @@ public class SP2 {
             child.setN(n[i], i);
         }
 
-        child.checkConstraint(Y, false);
         return child;
     }
     private static int[] crossoverLoop(int[] a, int[] b) {
@@ -157,14 +144,14 @@ public class SP2 {
         return newChild;
     }
 
-    private static Chromosome2[] pickRandomParent(Chromosome2[] pool) {
-        Chromosome2[] selection = new Chromosome2[2];
+    private static ChromosomesS[] pickRandomParent(ChromosomesS[] pool) {
+        ChromosomesS[] selection = new ChromosomesS[2];
 
         for (int i = 0; i < selectionSize; i++) {
             if (selection[0] == null) selection[i] = pool[rn.nextInt(pool.length)];
             else if (selection[1] == null) selection[i] = pool[rn.nextInt(pool.length)];
             else {
-                Chromosome2 c = pool[rn.nextInt(pool.length)];
+                ChromosomesS c = pool[rn.nextInt(pool.length)];
                 if (c.fitnessFunction() < selection[0].fitnessFunction()) selection[0] = c;
                 else if (c.fitnessFunction() < selection[1].fitnessFunction()) selection[1] = c;
             }
@@ -175,15 +162,15 @@ public class SP2 {
     }
 
 
-    private static Chromosome2 currentBest(Chromosome2[] pool) {
-        Chromosome2 c = null;
-        for (Chromosome2 cc: pool) {
+    private static ChromosomesS currentBest(ChromosomesS[] pool) {
+        ChromosomesS c = null;
+        for (ChromosomesS cc: pool) {
             if (c == null) c = cc;
             else if (cc.fitnessFunction() < c.fitnessFunction()) c = cc;
         }
         assert c != null;
         System.out.print(
-                        ", Positions S:" + c.getS(0) + ", " + c.getS(1) + ", " + c.getS(2) + "\n"
+                ", Positions S:" + c.getS(0) + ", " + c.getS(1) + ", " + c.getS(2) + "\n"
                         + ", Positions F:" + c.getF(0) + ", " + c.getF(1) + ", " + c.getF(2) + "\n"
                         + ", Positions N:" + c.getN(0) + ", " + c.getN(1) + ", " + c.getN(2) + "\n"
                         + ", Positions Y:" + c.getY(0) + ", " + c.getY(1) + ", " + c.getY(2) + "\n");
@@ -191,10 +178,10 @@ public class SP2 {
         return c;
     }
 
-    private static Chromosome2[] generatePool(int poolSize , int variants, int Y) {
-        Chromosome2[] chromosomePool = new Chromosome2[poolSize];
+    private static ChromosomesS[] generatePool(int poolSize , int variants, int Y) {
+        ChromosomesS[] chromosomePool = new ChromosomesS[poolSize];
         for (int i = 0; i < chromosomePool.length; i++) {
-            Chromosome2 c = generateChromosome(variants, Y);
+            ChromosomesS c = generateChromosome(variants, Y);
             while (!c.checkConstraint(Y, true)) {
                 c = generateChromosome(variants, Y);
             }
@@ -204,11 +191,11 @@ public class SP2 {
     }
 
 
-    private static Chromosome2 generateChromosome(int variants, int Y) {
+    private static ChromosomesS generateChromosome(int variants, int Y) {
         double[] fMax = {3.4, 2.4, 4.0};
         int[] nMax = {30000, 60000, 25000};
         int fMin = 1;
-        Chromosome2 c = new Chromosome2(rn);
+        ChromosomesS c = new ChromosomesS(rn);
         for (int j = 0; j < variants; j++) {
             c.setY(rn.nextInt(Y-1) + 1, j);
         }
@@ -221,23 +208,23 @@ public class SP2 {
             c.setS(rValue, j);
 
         }
-        if (!c.checkConstraint(Y, false)) generateChromosome(variants, Y);
+        c.checkConstraint(Y, false);
         return c;
     }
 
 }
 
-class Chromosome2 {
+class ChromosomesS {
     private final int[] y = new int[3];
     private final int[] s = new int[3];
-    private final double[] A = {0.003206, 0.004485, 0.00370};
-    private final double[] B = {0.0068, 0.0053, 0.0070};
+    private final double[] A = {3.206, 4.485, 2.370};
+    private final int[] B = {68, 53, 70};
     private final double[] f = new double[3];
     private final int[] n = new int[3];
     private final int[] nMax = {30000, 60000, 25000};
     private final SecureRandom rn;
 
-    Chromosome2(SecureRandom rn) {
+    ChromosomesS(SecureRandom rn) {
         this.rn = rn;
     }
 
@@ -265,7 +252,7 @@ class Chromosome2 {
         return A;
     }
 
-    public double[] getFullB() {
+    public int[] getFullB() {
         return B;
     }
 
@@ -292,10 +279,11 @@ class Chromosome2 {
     public boolean checkConstraint(int Y, boolean first) {
         checkS();
         if (!first) fixSum();
-        if (!checkSum(Y)) return false;
+        checkSum(Y);
         checkN();
-        if (checkDelayCon()) return countSum() == Y;
-        return false;
+        //if (checkDelayCon())
+        return countSum() == Y;
+        //return false;
     }
 
     private void checkN() {
@@ -307,13 +295,9 @@ class Chromosome2 {
         }
     }
 
-    public boolean checkSum(int Y) {
-        for (int num : y) {
-            if (num < 0) return false;
-        }
+    public void checkSum(int Y) {
         if (countSum() < Y) adjustSum(Y - countSum(), true);
         else if (countSum() > Y) adjustSum(Y - countSum(), false);
-        return true;
     }
 
     private void adjustSum(int loops, boolean add) {
@@ -341,7 +325,7 @@ class Chromosome2 {
     public double pCloud() {
         double Z = 0;
         for (int j = 0; j < y.length; j++) {
-            Z += (s[j]*n[j]*((A[j]*(Math.pow(f[j], 3)) + B[j])));
+            Z += (s[j]*n[j]*(A[j]*(Math.pow(f[j], 3)) + B[j]));
         }
         return Z;
     }
@@ -354,7 +338,7 @@ class Chromosome2 {
             double delay = (s[i] * (erlang/val));
             Z += delay;
         }
-        return Z;
+        return 1.0;
     }
 
     public void mutate(int Y) {
@@ -406,7 +390,7 @@ class Chromosome2 {
         int sum = 0;
         for (int i : s) sum += i;
 
-        boolean zero = sum == 0;
+        boolean zero = sum == 0 || sum == 1;
         if (zero) {
             int pos =rn.nextInt(3);
             setS(1, pos);
@@ -418,7 +402,7 @@ class Chromosome2 {
             double erlang = erlangC(i);
             double val = ((n[i] * f[i])-y[i]) + (1/f[i]);
             double delay = (s[i] * (erlang/val));
-            if ( (delay > 1 && s[i] != 0)|| (delay < 0 && s[i] != 0)) return false;
+            if ( (delay > 1 && s[i] != 0) || (delay < 0 && s[i] != 0)) return false;
         }
         return  true;
     }
@@ -453,6 +437,10 @@ class Chromosome2 {
     }
 
     public double fitnessFunction() {
-        return pCloud();
+        double Z = 0;
+        for (int j = 0; j < y.length; j++) {
+            Z += (s[j]*n[j]*(A[j]*(Math.pow(f[j], 3)) + B[j]));
+        }
+        return Z;
     }
 }
