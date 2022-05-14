@@ -2,13 +2,19 @@ Best for workload 1000, Fitness score 2.450049713743128, Positions:367, 211, 211
 
 Best for workload 2000, Fitness score 5.379289168246679, Positions:421, 579, 579, 421, , Sum calculated: 5.379289168246679, Power: 5.3274604000000005, Delay:  0.051828768246678696 
 
-Best for workload 3000, Fitness score 8.853596842524917, Positions:828, 828, 672, 672, , Sum calculated: 8.853596842524917, Power: 8.8017696, Delay:  0.051827242524916946 
+Best for workload 3000, Fitness score 8.853596842524917, Positions:672, 672, 828, 828, , Sum calculated: 8.853596842524917, Power: 8.8017696, Delay:  0.05182724252491694 
 
-Best for workload 4000, Fitness score 12.878302052214453, Positions:923, 1077, 923, 1077, , Sum calculated: 12.878302052214453, Power: 12.8260876, Delay:  0.052214452214452214 
+Best for workload 4000, Fitness score 12.878302052214451, Positions:923, 1077, 923, 1077, , Sum calculated: 12.878302052214453, Power: 12.8260876, Delay:  0.052214452214452214 
 
-Best for workload 5000, Fitness score 17.45315587706409, Positions:1327, 1327, 1173, 1173, , Sum calculated: 17.45315587706409, Power: 17.4010876, Delay:  0.05206827706409301 
+Best for workload 5000, Fitness score 17.45315587706409, Positions:1327, 1173, 1327, 1173, , Sum calculated: 17.45315587706409, Power: 17.401087599999997, Delay:  0.05206827706409301 
 
 Best for workload 6000, Fitness score 22.578104434539178, Positions:1577, 1423, 1423, 1577, , Sum calculated: 22.578104434539178, Power: 22.5260876, Delay:  0.05201683453917813 
 
-Best for workload 7000, Fitness score 28.253076942657383, Positions:1827, 1827, 1673, 1673, , Sum calculated: 28.253076942657383, Power: 28.201087599999997, Delay:  0.051989342657385626 
+Best for workload 7000, Fitness score 28.253076942657383, Positions:1673, 1827, 1827, 1673, , Sum calculated: 28.253076942657387, Power: 28.201087599999997, Delay:  0.051989342657385626 
+
+Best for workload 8000, Fitness score 34.47805671043816, Positions:1923, 2077, 1923, 2077, , Sum calculated: 34.47805671043815, Power: 34.4260876, Delay:  0.05196911043815612 
+
+Best for workload 9000, Fitness score 41.25304869612, Positions:2327, 2173, 2173, 2327, , Sum calculated: 41.253048696120004, Power: 41.2010876, Delay:  0.05196109611999747 
+
+Best for workload 10000, Fitness score 48.578044415114704, Positions:2577, 2423, 2423, 2577, , Sum calculated: 48.578044415114704, Power: 48.5260876, Delay:  0.05195681511470985 
 
