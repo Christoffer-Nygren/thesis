@@ -156,10 +156,9 @@ public class SP2 {
 
     private static Chromosome2[] pickRandomParent(Chromosome2[] pool) {
         Chromosome2[] selection = new Chromosome2[2];
-
         for (int i = 0; i < selectionSize; i++) {
             if (selection[0] == null) selection[i] = pool[rn.nextInt(pool.length)];
-            else if (selection[1] == null) selection[i] = pool[rn.nextInt(pool.length)];
+            else if (selection[1] == null) selection[1] = pool[rn.nextInt(pool.length)];
             else {
                 Chromosome2 c = pool[rn.nextInt(pool.length)];
                 if (c.fitnessFunction() < selection[0].fitnessFunction()) selection[0] = c;

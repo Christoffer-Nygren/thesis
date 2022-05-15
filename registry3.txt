@@ -1,0 +1,31 @@
+
+Best for workload [0, 10000, 0], Fitness score 497.0Positions C:[[0, 0, 0, 0], [1707, 557, 2759, 4977], [0, 0, 0, 0]]
+
+Best for workload [0, 20000, 0], Fitness score 997.0Positions C:[[0, 0, 0, 0], [6675, 3034, 1657, 8634], [0, 0, 0, 0]]
+
+Best for workload [0, 30000, 0], Fitness score 1497.0Positions C:[[0, 0, 0, 0], [10449, 15196, 1536, 2819], [0, 0, 0, 0]]
+
+Best for workload [40000, 0, 0], Fitness score 1997.0Positions C:[[2658, 19029, 15637, 2676], [0, 0, 0, 0], [0, 0, 0, 0]]
+
+Best for workload [0, 50000, 0], Fitness score 2497.0Positions C:[[0, 0, 0, 0], [11410, 23837, 196, 14557], [0, 0, 0, 0]]
+
+Best for workload [0, 10000, 0], Fitness score 2.0Positions C:[[0, 0, 0, 0], [3760, 1667, 3617, 956], [0, 0, 0, 0]]
+
+Best for workload [0, 20000, 0], Fitness score 7.0Positions C:[[0, 0, 0, 0], [1359, 3175, 5763, 9703], [0, 0, 0, 0]]
+
+Best for workload [0, 30000, 0], Fitness score 12.0Positions C:[[0, 0, 0, 0], [5109, 1418, 11844, 11629], [0, 0, 0, 0]]
+
+Best for workload [40000, 0, 0], Fitness score 17.0Positions C:[[1113, 13998, 5575, 19314], [0, 0, 0, 0], [0, 0, 0, 0]]
+
+Best for workload [0, 50000, 0], Fitness score 22.0Positions C:[[0, 0, 0, 0], [8852, 3970, 3468, 33710], [0, 0, 0, 0]]
+
+Best for workload [0, 60000, 0], Fitness score 27.0Positions C:[[0, 0, 0, 0], [26894, 3539, 19769, 9798], [0, 0, 0, 0]]
+
+Best for workload [0, 70000, 0], Fitness score 32.0Positions C:[[0, 0, 0, 0], [5015, 27977, 7485, 29523], [0, 0, 0, 0]]
+
+Best for workload [0, 80000, 0], Fitness score 37.0Positions C:[[0, 0, 0, 0], [3992, 30947, 7368, 37693], [0, 0, 0, 0]]
+
+Best for workload [90000, 0, 0], Fitness score 42.0Positions C:[[13845, 67397, 5927, 2831], [0, 0, 0, 0], [0, 0, 0, 0]]
+
+Best for workload [59645, 40355, 0], Fitness score 44.0Positions C:[[17299, 25719, 3405, 5563], [21513, 1289, 17975, 7237], [0, 0, 0, 0]]
+

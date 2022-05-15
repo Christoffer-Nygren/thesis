@@ -12,7 +12,7 @@ public class SP3 {
             {1923, 2077, 1923, 2077}, {2327, 2173, 2173, 2327}, {2577, 2423, 2423, 2577}};
     private static final int[][] y = {{0, 10000, 0}, {0, 20000, 0}, {0, 30000, 0}, {40000, 0, 0}, {0, 50000, 0},
             {0, 60000, 0}, {0, 70000, 0}, {0, 80000, 0}, {90000, 0, 0}, {59645, 40355, 0}};
-    private static final double d = 2.4;
+    private static final double d = 0.0005;
     private static final int generations = 50000;
     private static final int poolSize = 100;
     private static final int selectionSize = 8;
@@ -26,16 +26,18 @@ public class SP3 {
         for (int i = 0; i < l.length; i++) {
             pool = generatePool(i);
             topOnes[currentGen] = bestGenerationalFitness(pool);
-            System.out.println(printC(topOnes[0]));
+            System.out.println("Generation: " + currentGen + " " + printC(topOnes[currentGen]) + " Fitness: " + topOnes[currentGen].fitnessFunction());
             currentGen++;
             while (currentGen < generations) {
                 pool = progressiveGeneration(pool, i);
                 topOnes[currentGen] = bestGenerationalFitness(pool);
-                System.out.println(printC(topOnes[0]));
+                System.out.println("Generation: " + currentGen + " " + printC(topOnes[currentGen]) + " Fitness: " + topOnes[currentGen].fitnessFunction());
                 currentGen++;
             }
+            currentGen = 0;
             Chromosome3 bestSolution = bestGenerationalFitness(topOnes);
             addToRegistry(bestSolution, i);
+            topOnes = new Chromosome3[generations];
         }
 
     }
@@ -80,6 +82,7 @@ public class SP3 {
                 parents = pickParents(pool);
                 child = crossoverParents(parents, n);
             }
+            newPool[i] = child;
         }
         return newPool;
     }
@@ -103,16 +106,14 @@ public class SP3 {
     }
 
     private static Chromosome3[] pickParents(Chromosome3[] pool) {
-        Chromosome3[] tournament = new Chromosome3[selectionSize];
         Chromosome3[] winners = new Chromosome3[2];
-        for (int i = 0; i < tournament.length; i++) {
-            tournament[i] = pool[rn.nextInt(pool.length)];
-        }
-        for (Chromosome3 c : tournament) {
-            if (winners[0] == null) winners[0] = c;
-            else if (c.fitnessFunction() < winners[0].fitnessFunction()) {
-                winners[1] = winners[0];
-                winners[0] = c;
+        for (int i = 0; i < selectionSize; i++) {
+            if (winners[0] == null) winners[i] = pool[rn.nextInt(pool.length)];
+            else if (winners[1] == null) winners[1] = pool[rn.nextInt(pool.length)];
+            else {
+                Chromosome3 c = pool[rn.nextInt(pool.length)];
+                if (c.fitnessFunction() < winners[0].fitnessFunction()) winners[0] = c;
+                else if (c.fitnessFunction() < winners[1].fitnessFunction()) winners[1] = c;
             }
         }
         return winners;
@@ -146,7 +147,6 @@ public class SP3 {
             c.setC(fixC(n));
             while(!c.checkConstraint(true)) c.setC(fixC(n));
             pool[i] = c;
-            System.out.println("Bop");
         }
         return pool;
     }
@@ -240,14 +240,6 @@ class Chromosome3 {
         for (int[] c : C) {
             for (int cc : c) {
                 z += cc;
-            }
-        }
-        if (z == 10000)  {
-            System.out.println("Sum" + z);
-            for (int[] c : C) {
-                for (int cc : c) {
-                    System.out.println(cc);
-                }
             }
         }
 
