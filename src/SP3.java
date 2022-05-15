@@ -24,12 +24,12 @@ public class SP3 {
         Chromosome3[] pool;
         Chromosome3[] topOnes = new Chromosome3[generations];
         for (int i = 0; i < l.length; i++) {
-            pool = generatePool(i);
+            pool = generatePool(d,  l[i],  x[i],  y[i]);
             topOnes[currentGen] = bestGenerationalFitness(pool);
             System.out.println("Generation: " + currentGen + " " + printC(topOnes[currentGen]) + " Fitness: " + topOnes[currentGen].fitnessFunction());
             currentGen++;
             while (currentGen < generations) {
-                pool = progressiveGeneration(pool, i);
+                pool = progressiveGeneration(pool, d,  l[i],  x[i],  y[i]);
                 topOnes[currentGen] = bestGenerationalFitness(pool);
                 System.out.println("Generation: " + currentGen + " " + printC(topOnes[currentGen]) + " Fitness: " + topOnes[currentGen].fitnessFunction());
                 currentGen++;
@@ -39,6 +39,25 @@ public class SP3 {
             addToRegistry(bestSolution, i);
             topOnes = new Chromosome3[generations];
         }
+
+    }
+
+    public static Chromosome3 start(int[] x, int[] y, int l) {
+        int generations = 5000;
+        int currentGen = 0;
+        Chromosome3[] pool;
+        Chromosome3[] topOnes = new Chromosome3[generations];
+        pool = generatePool(d,  l,  x,  y);
+        topOnes[currentGen] = bestGenerationalFitness(pool);
+        System.out.println("Generation: " + currentGen + " " + printC(topOnes[currentGen]) + " Fitness: " + topOnes[currentGen].fitnessFunction());
+        currentGen++;
+        while (currentGen < generations) {
+            pool = progressiveGeneration(pool,d,l, x, y);
+            topOnes[currentGen] = bestGenerationalFitness(pool);
+            System.out.println("Generation: " + currentGen + " " + printC(topOnes[currentGen]) + " Fitness: " + topOnes[currentGen].fitnessFunction());
+            currentGen++;
+        }
+        return bestGenerationalFitness(topOnes);
 
     }
 
@@ -73,21 +92,21 @@ public class SP3 {
         }
     }
 
-    private static Chromosome3[] progressiveGeneration(Chromosome3[] pool, int n) {
+    private static Chromosome3[] progressiveGeneration(Chromosome3[] pool, double d, int l, int[] x, int[] y) {
         Chromosome3[] newPool = new Chromosome3[pool.length];
         for (int i = 0; i < newPool.length; i++) {
             Chromosome3[] parents = pickParents(pool);
-            Chromosome3 child = crossoverParents(parents, n);
+            Chromosome3 child = crossoverParents(parents, d, l, x, y);
             while(!child.checkConstraint(false)) {
                 parents = pickParents(pool);
-                child = crossoverParents(parents, n);
+                child = crossoverParents(parents,  d, l, x, y);
             }
             newPool[i] = child;
         }
         return newPool;
     }
 
-    private static Chromosome3 crossoverParents(Chromosome3[] parents, int n) {
+    private static Chromosome3 crossoverParents(Chromosome3[] parents, double d, int l, int[] x, int[] y) {
         int splittingPoint = rn.nextInt(parents[0].getC()[0].length);
         int mutation = rn.nextInt(100);
         int[][] C = new int[3][4];
@@ -99,7 +118,7 @@ public class SP3 {
             }
             C[i] = temp;
         }
-        Chromosome3 child = new Chromosome3(d, l[n], x[n], y[n], rn);
+        Chromosome3 child = new Chromosome3(d, l, x, y, rn);
         child.setC(C);
         if (mutation <= mutationRate) child.mutate();
         return child;
@@ -140,23 +159,23 @@ public class SP3 {
         return best;
     }
 
-    private static Chromosome3[] generatePool(int n) {
+    private static Chromosome3[] generatePool(double d, int l, int[] x, int[] y) {
         Chromosome3[] pool = new Chromosome3[poolSize];
         for (int i = 0; i < pool.length; i++) {
-            Chromosome3 c = new Chromosome3(d, l[n], x[n], y[n], rn);
-            c.setC(fixC(n));
-            while(!c.checkConstraint(true)) c.setC(fixC(n));
+            Chromosome3 c = new Chromosome3(d, l, x, y, rn);
+            c.setC(fixC(y));
+            while(!c.checkConstraint(true)) c.setC(fixC(y));
             pool[i] = c;
         }
         return pool;
     }
 
-    private static int[][] fixC(int n) {
+    private static int[][] fixC(int[] y) {
         int[][] C = new int[3][4];
         for (int j = 0; j < 3; j++) {
             for (int m = 0; m < 4 ; m++) {
-                if (y[n][j] == 0) C[j][m] = 0;
-                else C[j][m] = rn.nextInt(y[n][j]);
+                if (y[j] == 0) C[j][m] = 0;
+                else C[j][m] = rn.nextInt(y[j]);
 
             }
         }

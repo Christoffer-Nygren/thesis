@@ -35,7 +35,28 @@ public class SP2 {
             currentGen = 0;
         }
     }
+    public static Chromosome2 start(int Y) {
+        int generations = 5000;
+        int currentGen = 0;
+        int poolSize = 100;
+        int variants = 3;
+        Chromosome2[] generationalTops = new Chromosome2[generations];
+        Chromosome2 generationalBest;
+        Chromosome2[] pool = generatePool(poolSize, variants, Y);
+        generationalBest = currentBest(pool);
+        System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction());
+        generationalTops[currentGen] = generationalBest;
+        currentGen++;
+        while (currentGen < generations) {
+            pool = progressiveGenerations(pool, Y);
+            generationalBest = currentBest(pool);
+            System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction());
+            generationalTops[currentGen] = generationalBest;
+            currentGen++;
+        }
+        return currentBest(generationalTops);
 
+    }
     private static void addToRegistry(Chromosome2 c, int Y) {
         try {
             createFile();

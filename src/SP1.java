@@ -38,6 +38,31 @@ public class SP1 {
         }
     }
 
+    public static Chromosome1 start(int X, double V) {
+        int generations = 5000;
+        int currentGen = 0;
+        int poolSize = 100;
+        int variants = 4;
+        int mutationRate = 10;
+        Chromosome1[] generationalTops = new Chromosome1[generations];
+        Chromosome1 generationalBest;
+        Chromosome1[] pool = generatePool(poolSize, variants, X);
+        generationalBest = currentBest(pool, V);
+        System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction(V));
+        generationalTops[currentGen] = generationalBest;
+        currentGen++;
+        while (currentGen < generations) {
+            pool = progressiveGenerations(pool, X, V, mutationRate);
+            generationalBest = currentBest(pool, V);
+            System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction(V));
+            generationalTops[currentGen] = generationalBest;
+            currentGen++;
+        }
+        return currentBest(generationalTops, V);
+
+
+    }
+
     private static void addToRegistry(Chromosome1 c, int X, double V) {
         try {
             createFile();
