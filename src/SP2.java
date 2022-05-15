@@ -23,9 +23,6 @@ public class SP2 {
             generationalTops[currentGen] = generationalBest;
             currentGen++;
             while (currentGen < generations) {
-                if (currentGen == 2840) {
-                    System.out.println("woo");
-                }
                 pool = progressiveGenerations(pool, j);
                 generationalBest = currentBest(pool);
                 System.out.println("Gen: " + currentGen + ", Current best fitness: " + generationalBest.fitnessFunction());
@@ -62,6 +59,19 @@ public class SP2 {
         }
     }
 
+    private static void createFile() {
+        try {
+            File myObj = new File("registry3.txt");
+            if (myObj.createNewFile()) {
+                System.out.println("File created: " + myObj.getName());
+            } else {
+                System.out.println("File already exists.");
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+    }
     private static String toString(int[] arr) {
         StringBuilder string = new StringBuilder();
         for (int i: arr) string.append(i).append(", ");
@@ -74,19 +84,6 @@ public class SP2 {
         return String.valueOf(string);
     }
 
-    private static void createFile() {
-        try {
-            File myObj = new File("registry.txt");
-            if (myObj.createNewFile()) {
-                System.out.println("File created: " + myObj.getName());
-            } else {
-                System.out.println("File already exists.");
-            }
-        } catch (IOException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
-    }
 
     private static Chromosome2[] progressiveGenerations(Chromosome2[] pool, int Y) {
         Chromosome2[] newPop = new Chromosome2[pool.length];

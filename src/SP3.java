@@ -1,5 +1,9 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.stream.IntStream;
+import java.util.Arrays;
 
 public class SP3 {
     private static final int[] l = {11000,22000,33000, 44000, 55000, 66000, 77000, 88000, 99000, 110000};
@@ -21,31 +25,81 @@ public class SP3 {
         Chromosome3[] topOnes = new Chromosome3[generations];
         for (int i = 0; i < l.length; i++) {
             pool = generatePool(i);
-            topOnes[0] = bestGenerationalFitness(pool);
+            topOnes[currentGen] = bestGenerationalFitness(pool);
             System.out.println(printC(topOnes[0]));
+            currentGen++;
             while (currentGen < generations) {
-                pool = progressiveGeneration(pool);
+                pool = progressiveGeneration(pool, i);
+                topOnes[currentGen] = bestGenerationalFitness(pool);
+                System.out.println(printC(topOnes[0]));
                 currentGen++;
             }
+            Chromosome3 bestSolution = bestGenerationalFitness(topOnes);
+            addToRegistry(bestSolution, i);
         }
 
     }
 
-    private static Chromosome3[] progressiveGeneration(Chromosome3[] pool) {
+    private static void addToRegistry(Chromosome3 c, int pos) {
+        try {
+            createFile();
+            FileWriter myWriter = new FileWriter("registry3.txt", true);
+            BufferedWriter bw = new BufferedWriter(myWriter);
+            bw.write("Best for workload "+ Arrays.toString(y[pos]) + ", Fitness score " + c.fitnessFunction() +
+                    "Positions C:" + Arrays.deepToString(c.getC()) + "\n");
+            bw.newLine();
+            bw.close();
+            myWriter.close();
+            System.out.println("Successfully wrote to the file.");
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+    }
+
+    private static void createFile() {
+        try {
+            File myObj = new File("registry3.txt");
+            if (myObj.createNewFile()) {
+                System.out.println("File created: " + myObj.getName());
+            } else {
+                System.out.println("File already exists.");
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+    }
+
+    private static Chromosome3[] progressiveGeneration(Chromosome3[] pool, int n) {
         Chromosome3[] newPool = new Chromosome3[pool.length];
         for (int i = 0; i < newPool.length; i++) {
             Chromosome3[] parents = pickParents(pool);
-            Chromosome3 child = crossoverParents(parents);
-            while(!child.checkConstraint()) {
+            Chromosome3 child = crossoverParents(parents, n);
+            while(!child.checkConstraint(false)) {
                 parents = pickParents(pool);
-                child = crossoverParents(parents);
+                child = crossoverParents(parents, n);
             }
         }
         return newPool;
     }
 
-    private static Chromosome3 crossoverParents(Chromosome3[] parents) {
-
+    private static Chromosome3 crossoverParents(Chromosome3[] parents, int n) {
+        int splittingPoint = rn.nextInt(parents[0].getC()[0].length);
+        int mutation = rn.nextInt(100);
+        int[][] C = new int[3][4];
+        for (int i = 0; i < 3; i++) {
+            int[] temp = new int[4];
+            for (int j = 0; j < 4; j++) {
+                if (j < splittingPoint) temp[j] = parents[0].getC()[i][j];
+                else  temp[j] = parents[1].getC()[i][j];
+            }
+            C[i] = temp;
+        }
+        Chromosome3 child = new Chromosome3(d, l[n], x[n], y[n], rn);
+        child.setC(C);
+        if (mutation <= mutationRate) child.mutate();
+        return child;
     }
 
     private static Chromosome3[] pickParents(Chromosome3[] pool) {
@@ -88,16 +142,16 @@ public class SP3 {
     private static Chromosome3[] generatePool(int n) {
         Chromosome3[] pool = new Chromosome3[poolSize];
         for (int i = 0; i < pool.length; i++) {
-            Chromosome3 c = new Chromosome3(d, l[n], x[n], y[n]);
-            c.setC(fixC(c, n));
-            while(!c.checkConstraint()) c.setC(fixC(c, n));
+            Chromosome3 c = new Chromosome3(d, l[n], x[n], y[n], rn);
+            c.setC(fixC(n));
+            while(!c.checkConstraint(true)) c.setC(fixC(n));
             pool[i] = c;
             System.out.println("Bop");
         }
         return pool;
     }
 
-    private static int[][] fixC(Chromosome3 c, int n) {
+    private static int[][] fixC(int n) {
         int[][] C = new int[3][4];
         for (int j = 0; j < 3; j++) {
             for (int m = 0; m < 4 ; m++) {
@@ -114,14 +168,16 @@ class Chromosome3 {
     private int[][] C = new int[4][4];
     private final double d;
     private final int l;
+    private final SecureRandom rn;
     private final int[] x;
     private final int[] y;
 
-    Chromosome3(double d, int l, int[] x, int[] y) {
+    Chromosome3(double d, int l, int[] x, int[] y, SecureRandom rn) {
         this.d = d;
         this.l = l;
         this.x = x;
         this.y = y;
+        this.rn = rn;
     }
 
     public void setC (int[][] C) {
@@ -143,6 +199,32 @@ class Chromosome3 {
     }
 
     private void modifySum() {
+        int[][] c = getC();
+        for (int i = 0; i < 3; i++) {
+            if (sum(c[i]) != 0) adjustSum(c[i]);
+        }
+
+    }
+
+    private void adjustSum(int[] c) {
+        int loops = Math.abs(sum(y) - sum(c));
+        boolean bigger = sum(y) - sum(c) > 0;
+        int count = 0;
+        int grow = 0;
+        while (grow < loops) {
+            if (count == 3) count = 0;
+            if (bigger) {
+                c[count] = c[count]++;
+                grow++;
+            }
+            else {
+                if (c[count] > 0 ){
+                    c[count] = c[count]--;
+                    grow++;
+                }
+            }
+            count++;
+        }
     }
 
     private int sum(int[] C) {
@@ -182,4 +264,11 @@ class Chromosome3 {
         return Z;
     }
 
+    public void mutate() {
+        int pos = rn.nextInt(getC().length);
+        while (sum(C[pos]) == 0) pos = rn.nextInt(getC().length);
+        int toMutate = rn.nextInt(C[pos].length);
+        C[pos][toMutate] = rn.nextInt(y[pos]);
+        checkConstraint(false);
+    }
 }
