@@ -199,6 +199,7 @@ class Chromosome1 {
     public int getX(int pos) {
         return x[pos];
     }
+    public int[] getFullX() {return x;}
 
     public void setX(int x, int pos) {
         this.x[pos] = x;
